@@ -20,7 +20,30 @@ merged_df %>% slice_max(ship_date)
 
 glimpse(merged_df)
 
-merged_df %>% unique("Ship Date")
+annual_total_freight_paid <- sum(merged_df$freight_paid)*3
+annual_total_freight_paid
+
+avg_LTL_payment <- merged_df %>% group_by(carrier_type) %>% 
+  filter(carrier_type == 'LTL') %>% 
+  summarize(avg_LTL_payment = mean(freight_paid))
+avg_LTL_payment
+
+# Checking cities in different states with same name
+merged_df %>%
+  group_by(origin_city) %>%
+  summarize(distinct_state_count = n_distinct(origin_state)) %>%
+  filter(distinct_state_count > 1)
+merged_df %>%
+  group_by(dest_city) %>%
+  summarize(distinct_state_count = n_distinct(dest_state)) %>%
+  filter(distinct_state_count > 1)
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 8 Cities that exist in different states few so have to group by dest_state as well
+
+top_dest_org_pair <- merged_df %>% group_by(carrier_type, origin_city, dest_city, dest_state) %>% 
+  filter(carrier_type == 'LTL') %>% 
+  summarize(dest_org_pair_count = n()) %>% 
+  arrange(desc(dest_org_pair_count))
+
 # Gavin
 
 # Derek
