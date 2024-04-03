@@ -4,15 +4,11 @@ library(dplyr)
 library(lubridate)
 
 # Dallas
-# I broke the excel sheets into two CSV UT8 files. The function file.choose() 
-# lets me choose the file easily if you wanted to use it to we wouldn't need to change it every time
-file_path_shipments <- file.choose()
+# I broke the excel sheets into two CSV UT8 files. You can use the links to download it 
 
-df_shipments <- read_csv(file_path_shipments)
+df_shipments <- read_csv('https://www.dropbox.com/scl/fi/kycaltu2y4e4k2jno8gmu/Blue-Star-2019-1-Shipments.csv?rlkey=fw60qiu5y9ciniheuyub44phz&dl=1')
 
-file_path_carriers <- file.choose()
-
-df_carriers <- read_csv(file_path_carriers)
+df_carriers <- read_csv('https://www.dropbox.com/scl/fi/zly5n0tuzpmceczh9dpct/Blue-Star-2019-1-Carriers.csv?rlkey=nz5h6wg2y5fthyy0juw1o36xo&dl=1')
 
 merged_df <- left_join(df_shipments, df_carriers, by = "SCAC") %>% 
   janitor::clean_names() %>% 
@@ -23,7 +19,6 @@ merged_df %>% slice_max(ship_date)
 # 4 months of data
 
 glimpse(merged_df)
-
 
 merged_df %>% unique("Ship Date")
 # Gavin
