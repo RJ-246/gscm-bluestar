@@ -3,6 +3,7 @@ library(tidymodels)
 library(dplyr)
 library(lubridate)
 
+
 # Dallas
 # I broke the excel sheets into two CSV UT8 files. You can use the links to download it 
 
@@ -149,3 +150,66 @@ top_tl_carriers <- tl_shipments_with_carriers %>%
 # Derek
 
 # Ryan
+library(tidyverse)
+library(tidymodels)
+library(dplyr)
+library(lubridate)
+#install.packages("units", "sf", "tigris", "raster", "tidycensus", "zipcodeR")
+#install.packages('units')
+#install.packages("sf", type = "source", configure.args = "--with-proj-lib=$(brew --prefix)/lib/")
+#install.packages('tigris')
+#install.packages('raster')
+#install.packages('tidycensus')
+#install.packages('zipcodeR')
+library('zipcodeR')
+
+df_shipments <- read_csv('https://www.dropbox.com/scl/fi/kycaltu2y4e4k2jno8gmu/Blue-Star-2019-1-Shipments.csv?rlkey=fw60qiu5y9ciniheuyub44phz&dl=1')
+
+df_carriers <- read_csv('https://www.dropbox.com/scl/fi/zly5n0tuzpmceczh9dpct/Blue-Star-2019-1-Carriers.csv?rlkey=nz5h6wg2y5fthyy0juw1o36xo&dl=1')
+
+merged_df <- left_join(df_shipments, df_carriers, by = "SCAC") %>% 
+  janitor::clean_names() %>% 
+  mutate(ship_date = mdy(ship_date)) %>% 
+  mutate(freight_paid = parse_number((freight_paid)))
+merged_df %>% glimpse()
+
+#clean destination zip codes
+merged_df <- merged_df %>% 
+  mutate(dest_zip_clean = str_extract(dest_zip, "^\\d{5}"))
+
+#Generate all possible pairings of origin and destinations
+ori_dest_pairs <- merged_df %>% 
+  expand(origin_zip, dest_zip_clean)
+
+#Calculate distances between all possible combinations and select the shortest 3 for each destination
+#creates 264 NA values because of lack of info about certain zip codes
+shortest_pairs <- ori_dest_pairs %>% 
+  mutate(distance = (zipcodeR::zip_distance(origin_zip, dest_zip_clean)$distance)) %>% 
+  group_by(dest_zip_clean) %>% 
+  drop_na(distance) %>% 
+  slice_min(n=1, order_by = distance)
+
+distance_plot <- shortest_pairs %>% 
+  ggplot(mapping = aes(x = distance))+
+  geom_histogram()
+
+
+#Calculate average cost/mile for each individual carrier
+TL_carriers_ppm <- merged_df %>% 
+  group_by(scac) %>% 
+  filter(carrier_type == "TL") %>% 
+  summarize(TL_price_per_mile = mean(freight_paid / miles)) %>% 
+  arrange(TL_price_per_mile)
+
+#has negative averages, need to figure out why thats happening
+LTL_carriers_ppm <- merged_df %>% 
+  group_by(scac) %>% 
+  filter(carrier_type == "LTL") %>% 
+  summarize(TL_price_per_mile = mean(freight_paid / miles / (weight /100))) %>% 
+  arrange(TL_price_per_mile)
+
+merged_df %>% 
+  filter(scac == "TWEX") %>% 
+  select(freight_paid, miles, weight) %>% 
+  arrange(freight_paid)
+
