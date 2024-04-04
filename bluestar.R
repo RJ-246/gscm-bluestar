@@ -93,7 +93,7 @@ top_od_pairs <- ltl_shipments %>%
 # 4. How many carriers currently serve the top TL (Truckload) origin-destination pairs?
 # Assuming TL shipments can be distinguished in a similar way to LTL
 tl_shipments <- df_shipments %>%
-  filter(Volume >= 1500)  # Example volume threshold for TL
+  filter(carrier_type == 'LTL')  # Example volume threshold for TL
 
 # Join the shipments data with the carriers data on the SCAC code
 tl_shipments_with_carriers <- tl_shipments %>%
