@@ -92,22 +92,11 @@ df_shipments <- read_csv('https://www.dropbox.com/scl/fi/kycaltu2y4e4k2jno8gmu/B
 df_carriers <- read_csv('https://www.dropbox.com/scl/fi/zly5n0tuzpmceczh9dpct/Blue-Star-2019-1-Carriers.csv?rlkey=nz5h6wg2y5fthyy0juw1o36xo&dl=1')
 
 # 1. How much does BlueStar annually spend on transportation?
-# First, let's take a look at the unique values in the `Freight Paid` column to see if there's any pattern that's causing the issue.
-unique_values_in_freight_paid <- unique(df_shipments$`Freight Paid`)
-
-# Clean the `Freight Paid` column by removing dollar signs and commas, then convert to numeric
-df_shipments$`Freight Paid Clean` <- as.numeric(gsub(",", "", gsub("\\$", "", df_shipments$`Freight Paid`)))
-
-# Now, filter the annual shipments for 2015 and sum the cleaned `Freight Paid` column
-annual_shipments <- df_shipments %>% 
-  filter(year(`Ship Date`))
-
-annual_transportation_cost <- sum(annual_shipments$`Freight Paid Clean`, na.rm = TRUE)
-
+annual_total_freight_paid <- sum(merged_df$freight_paid)*3
 
 # 2. What are some of the key metrics for LTL shipments?
 # Assuming LTL shipments can be filtered by a specific condition (e.g., Volume < some threshold)
-ltl_shipments <- merged_df %>% 
+ltl_shipments <- merged_df %>%
   filter(carrier_type == 'LTL') 
 
 # Calculating LTL metrics
@@ -119,55 +108,34 @@ ltl_metrics <- ltl_shipments %>%
   )
 
 # 3. What are the top origin-destination pairs for LTL shipments?
-# Further filter LTL shipments if needed and then group by origin-destination pair
+# Note that some destination cities are repeated and so this will need to be changed
 top_od_pairs <- ltl_shipments %>%
-  group_by(`Origin City`, `Dest City`) %>%
-  summarise(Total_Shipments = n()) %>%
-  arrange(desc(Total_Shipments))
+  group_by(origin_city, dest_city) %>%
+  summarise(total_shipments = n()) %>%
+  arrange(desc(total_shipments))
 
 # 4. How many carriers currently serve the top TL (Truckload) origin-destination pairs?
-# Assuming TL shipments can be distinguished in a similar way to LTL
-tl_shipments <- df_shipments %>%
-  filter(carrier_type == 'LTL')  # Example volume threshold for TL
-
-# Join the shipments data with the carriers data on the SCAC code
-tl_shipments_with_carriers <- tl_shipments %>%
-  inner_join(df_carriers, by = "SCAC")
+# Needs update to account for serving the top TL
+tl_shipments <- merged_df %>%
+  filter(carrier_type == 'TL')
 
 # Count distinct carriers for the top origin-destination pairs
-top_tl_od_pairs <- tl_shipments_with_carriers %>%
-  group_by(`Origin City`, `Dest City`) %>%
-  summarise(Carrier_Count = n_distinct(`Carrier Name`)) %>%
-  arrange(desc(Carrier_Count))
+top_tl_od_pairs <- tl_shipments %>%
+  group_by(origin_city, dest_city) %>%
+  summarise(carrier_count = n_distinct(`carrier_name`)) %>%
+  arrange(desc(carrier_count))
 
 # 5. What is the average shipment size and length of haul for each mode?
-# Join the shipments data with the carriers data on the SCAC code for overall use
-shipments_with_carriers <- df_shipments %>%
-  inner_join(df_carriers, by = "SCAC")
-
-# Now you can proceed with question #5 using the above-defined object
-average_shipment_size_length <- shipments_with_carriers %>%
-  group_by(`Carrier Type`) %>%
-  summarise(
-    Average_Weight = mean(Weight, na.rm = TRUE),
-    Average_Miles = mean(Miles, na.rm = TRUE)
-  )
-
 
 # Calculate the average Weight and Miles for each Carrier Type
-average_shipment_size_length <- shipments_with_carriers %>%
-  group_by(`Carrier Type`) %>%
+average_shipment_size_length <- merged_df %>%
+  group_by(carrier_type) %>%
   summarise(
-    Average_Weight = mean(Weight),
-    Average_Miles = mean(Miles)
+    Average_Weight = mean(weight),
+    Average_Miles = mean(miles)
   )
 
 # 6. Who are the top TL carriers?
-# Assuming top means carriers with the most shipments
-top_tl_carriers <- tl_shipments_with_carriers %>%
-  group_by(`Carrier Name`) %>%
-  summarise(Total_Shipments = n()) %>%
-  arrange(desc(Total_Shipments))
 
 
 
@@ -242,6 +210,7 @@ library(lubridate)
 #install.packages('raster')
 #install.packages('tidycensus')
 #install.packages('zipcodeR')
+
 #install.packages('geosphere')
 #install.packages('ggmap')
 library(zipcodeR)
@@ -350,4 +319,40 @@ merged_df %>%
   filter(scac == "TWEX") %>% 
   select(freight_paid, miles, weight) %>% 
   arrange(freight_paid)
+
+
+
+
+# added by Derek
+
+
+
+data("zip_code_db")
+
+
+unique_origin_zips <- merged_df %>% pull(origin_zip) %>% unique() %>% na.omit()
+unique_dest_zips <- merged_df %>% pull(dest_zip_clean) %>% unique() %>% na.omit()
+
+# Create a data frame of unique zip codes from your dataset for both origin and destination
+origin_zip_df <- data.frame(origin_zip = unique_origin_zips)
+dest_zip_df <- data.frame(dest_zip_clean = unique_dest_zips)
+
+# Merge with zip_code_database to get lat and long
+origin_coordinates <- left_join(origin_zip_df, zip_code_db, by = c("origin_zip" = "zipcode"))
+dest_coordinates <- left_join(dest_zip_df, zip_code_db, by = c("dest_zip_clean" = "zipcode"))
+
+# Select only the relevant columns and rename them for clarity
+origin_coordinates <- origin_coordinates %>% select(origin_zip, origin_lat = lat, origin_long = lng)
+dest_coordinates <- dest_coordinates %>% select(dest_zip_clean, dest_lat = lat, dest_long = lng)
+
+# Merge the coordinates back into the main dataframe
+merged_df <- merged_df %>%
+  left_join(origin_coordinates, by = 'origin_zip') %>%
+  left_join(dest_coordinates, by = 'dest_zip_clean')
+
+# Your existing analysis code goes here...
+
+# Export the dataframe with the new latitude and longitude columns
+
+write_csv(merged_df, "blue_star_merged.csv")
 
