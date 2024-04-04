@@ -161,7 +161,11 @@ library(lubridate)
 #install.packages('raster')
 #install.packages('tidycensus')
 #install.packages('zipcodeR')
-library('zipcodeR')
+#install.packages('geosphere')
+#install.packages('ggmap')
+library(zipcodeR)
+library(geosphere)
+library(ggmap)
 
 df_shipments <- read_csv('https://www.dropbox.com/scl/fi/kycaltu2y4e4k2jno8gmu/Blue-Star-2019-1-Shipments.csv?rlkey=fw60qiu5y9ciniheuyub44phz&dl=1')
 
@@ -185,14 +189,67 @@ ori_dest_pairs <- merged_df %>%
 #creates 264 NA values because of lack of info about certain zip codes
 shortest_pairs <- ori_dest_pairs %>% 
   mutate(distance = (zipcodeR::zip_distance(origin_zip, dest_zip_clean)$distance)) %>% 
+  group_by(dest_zip_clean)
+
+# to_geocode <- shortest_pairs %>% 
+#   filter(is.na(distance) == TRUE) %>% 
+#   distinct(dest_zip_clean) %>% 
+#   inner_join(merged_df, by="dest_zip_clean") %>% 
+#   distinct(dest_zip_clean, dest_state, dest_city)
+
+#ggmap::register_google(key = "AIzaSyBdUgUeiKptV_THCrLVEch0B_jN0EbJ9_k")
+#geocoded_zips <- to_geocode %>% 
+#  unite("location", dest_city, dest_state, dest_zip_clean, sep = " ") %>% 
+#  ggmap::mutate_geocode(location)
+
+#write_delim(geocoded_zips, file= "/Users/rjackso3/Documents/School_Stuff/Winter_2024/GSCM_530/gscm-bluestar/geocoded_zips.csv", delim = ",")
+
+geocoded_zips <- read_csv("/Users/rjackso3/Documents/School_Stuff/Winter_2024/GSCM_530/gscm-bluestar/geocoded_zips.csv")
+
+#takes zip codes back out of geocoded
+geocoded_dests <- geocoded_zips %>% 
+  mutate(location = str_extract(location, "\\d{5}$")) %>% 
+  rename(dest_zip = location, dest_lon = lon, dest_lat = lat)
+
+# geocodes the origin zips
+distinct_origin_zips <- merged_df %>% 
+  distinct(origin_zip) %>% 
+  apply(MARGIN =1 , FUN = geocode_zip) %>% 
+  bind_rows() %>% 
+  rename(origin_zipcode = zipcode)
+
+#joins both tibbles
+joined_zips_coords <- crossing(dest_zip = geocoded_dests$dest_zip, origin_zipcode = distinct_origin_zips$origin_zipcode) %>% 
+  left_join(geocoded_dests, by = "dest_zip") %>% 
+  left_join(distinct_origin_zips, by = "origin_zipcode")
+#calculates distances between origins and destinations
+missing_distances <- joined_zips_coords %>% 
+  rowwise() %>% 
+  mutate(distance = raster::pointDistance(c(dest_lon, dest_lat), c(lng, lat), lonlat=TRUE) * 0.00062137)
+#removes duplicates (i dont know why there are duplicates)
+missing_distances <- missing_distances %>%
+  relocate(origin_zipcode) %>% 
+  arrange(origin_zipcode, dest_zip) %>% 
+  group_by(origin_zipcode, dest_zip) %>% 
+  slice_min(distance, n=1) %>% 
+  select(-c('lat', 'dest_lon', 'dest_lat','lng'))
+
+#replace NAs in original distance calculation with new ones
+shortest_pairs <- shortest_pairs %>% left_join(missing_distances, by = c('origin_zip' = "origin_zipcode", "dest_zip_clean" = "dest_zip")) %>% 
+  mutate(distance.x = if_else(is.na(distance.x) == TRUE, distance.y, distance.x)) %>% 
+  rename(distance = distance.x) %>% 
+  select(-distance.y)
+
+#get just the shortest distance between each origin/dest pair
+shortest_pairs <- shortest_pairs %>% 
   group_by(dest_zip_clean) %>% 
-  drop_na(distance) %>% 
   slice_min(n=1, order_by = distance)
 
 distance_plot <- shortest_pairs %>% 
   ggplot(mapping = aes(x = distance))+
   geom_histogram()
 
+###################
 
 #Calculate average cost/mile for each individual carrier
 TL_carriers_ppm <- merged_df %>% 
