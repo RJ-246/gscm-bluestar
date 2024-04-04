@@ -63,29 +63,24 @@ unique_values_in_freight_paid <- unique(df_shipments$`Freight Paid`)
 # Clean the `Freight Paid` column by removing dollar signs and commas, then convert to numeric
 df_shipments$`Freight Paid Clean` <- as.numeric(gsub(",", "", gsub("\\$", "", df_shipments$`Freight Paid`)))
 
-# Check again for any NA values that might have been introduced and what the original `Freight Paid` values were
-na_values <- df_shipments %>% 
-  filter(is.na(`Freight Paid Clean`)) %>% 
-  select(`Freight Paid`, `Freight Paid Clean`)
-
 # Now, filter the annual shipments for 2015 and sum the cleaned `Freight Paid` column
 annual_shipments <- df_shipments %>% 
-  filter(year(`Ship Date`) == 2015)
+  filter(year(`Ship Date`))
 
 annual_transportation_cost <- sum(annual_shipments$`Freight Paid Clean`, na.rm = TRUE)
 
 
 # 2. What are some of the key metrics for LTL shipments?
 # Assuming LTL shipments can be filtered by a specific condition (e.g., Volume < some threshold)
-ltl_shipments <- df_shipments %>% 
-  filter(Volume < 1500)  # Example volume threshold for LTL
+ltl_shipments <- merged_df %>% 
+  filter(carrier_type == 'LTL') 
 
 # Calculating LTL metrics
 ltl_metrics <- ltl_shipments %>%
   summarise(
-    On_Time_Delivery_Rate = mean(`On-Time`),
-    Freight_Damage_Rate = mean(`Damage Free`),
-    Billing_Accuracy_Rate = mean(`Billed Accurately`)
+    On_Time_Delivery_Rate = mean(`on_time`),
+    Freight_Damage_Rate = mean(`damage_free`),
+    Billing_Accuracy_Rate = mean(`billed_accurately`)
   )
 
 # 3. What are the top origin-destination pairs for LTL shipments?
