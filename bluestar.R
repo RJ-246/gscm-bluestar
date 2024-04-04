@@ -149,6 +149,57 @@ top_tl_carriers <- tl_shipments_with_carriers %>%
 
 # Derek
 
+# Load necessary libraries
+library(ggplot2)
+
+summary(merged_df)
+
+merged_df <- merged_df %>% # Changes negative weights to null because they're obvious errors and I don't want to screw up the data
+  mutate(weight = ifelse(weight < 0, NA, weight)) %>%
+  na.omit()
+
+# Handle dates - ensuring ship_date is in the correct format
+merged_df$ship_date <- ymd(merged_df$ship_date) # Modify if the format is different
+
+# Data visualization to understand factors influencing freight cost
+# Relationship between weight and freight_paid
+ggplot(merged_df, aes(x = weight, y = freight_paid)) + 
+  geom_point() + 
+  geom_smooth(method = "lm") +
+  labs(title = "Freight Cost by Weight")
+
+# Relationship between volume and freight_paid
+ggplot(merged_df, aes(x = volume, y = freight_paid)) + 
+  geom_point() + 
+  geom_smooth(method = "lm") +
+  labs(title = "Freight Cost by Volume")
+
+# Identifying anomalies/outliers in freight cost
+# Boxplot for freight_paid to identify outliers
+ggplot(merged_df, aes(y = freight_paid)) + 
+  geom_boxplot() +
+  labs(title = "Boxplot for Freight Costs")
+
+# Exploring categorical variables such as carrier_type
+ggplot(merged_df, aes(x = carrier_type, y = freight_paid)) + 
+  geom_boxplot() +
+  labs(title = "Freight Cost by Carrier Type")
+
+# Correlation matrix to see which variables are most related to freight_paid
+# "Miles" is hands down the biggest indicator of cost
+numeric_vars <- merged_df %>% select_if(is.numeric)
+correlation_matrix <- cor(numeric_vars, use = "complete.obs")
+print(correlation_matrix)
+
+# Freight paid over time--shows some anomalies towards the beginning
+ggplot(merged_df, aes(x = ship_date, y = freight_paid)) + 
+  geom_line(stat = "summary", fun.y = "mean") +
+  labs(title = "Trend of Freight Cost Over Time")
+
+
+
+
+
 # Ryan
 library(tidyverse)
 library(tidymodels)
