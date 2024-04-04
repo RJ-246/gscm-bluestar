@@ -16,6 +16,10 @@ merged_df <- left_join(df_shipments, df_carriers, by = "SCAC") %>%
   mutate(ship_date = mdy(ship_date)) %>% 
   mutate(freight_paid = parse_number((freight_paid)))
 
+merged_df <- merged_df %>% # Changes negative weights to null because they're obvious errors and I don't want to screw up the data
+  mutate(weight = ifelse(weight <= 0, NA, weight)) %>%
+  na.omit()
+
 merged_df %>% slice_max(ship_date)
 # 4 months of data
 
@@ -43,6 +47,22 @@ avg_TL_metrics <- merged_df %>% group_by(carrier_type) %>%
   )
 glimpse(avg_LTL_metrics)
 glimpse(avg_TL_metrics)
+
+merged_df <- merged_df %>% 
+  mutate(rate = if_else(carrier_type == 'LTL', 
+                        (freight_paid / miles) / (weight /100), 
+                        freight_paid/miles))
+
+
+plot_2 <- merged_df %>% 
+  filter(carrier_type %in% c("TL")) %>% 
+  group_by(scac) %>% 
+  filter(n() > 100) %>% 
+  ggplot(aes(x = miles, y = freight_paid, size = weight)) +
+  geom_point()+
+  facet_wrap(~scac)
+plot_2
+
 
 # Checking cities in different states with same name
 merged_df %>%
