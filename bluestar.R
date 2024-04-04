@@ -207,6 +207,7 @@ library(lubridate)
 #install.packages('raster')
 #install.packages('tidycensus')
 #install.packages('zipcodeR')
+
 #install.packages('geosphere')
 #install.packages('ggmap')
 library(zipcodeR)
@@ -315,4 +316,40 @@ merged_df %>%
   filter(scac == "TWEX") %>% 
   select(freight_paid, miles, weight) %>% 
   arrange(freight_paid)
+
+
+
+
+# added by Derek
+
+
+
+data("zip_code_db")
+
+
+unique_origin_zips <- merged_df %>% pull(origin_zip) %>% unique() %>% na.omit()
+unique_dest_zips <- merged_df %>% pull(dest_zip_clean) %>% unique() %>% na.omit()
+
+# Create a data frame of unique zip codes from your dataset for both origin and destination
+origin_zip_df <- data.frame(origin_zip = unique_origin_zips)
+dest_zip_df <- data.frame(dest_zip_clean = unique_dest_zips)
+
+# Merge with zip_code_database to get lat and long
+origin_coordinates <- left_join(origin_zip_df, zip_code_db, by = c("origin_zip" = "zipcode"))
+dest_coordinates <- left_join(dest_zip_df, zip_code_db, by = c("dest_zip_clean" = "zipcode"))
+
+# Select only the relevant columns and rename them for clarity
+origin_coordinates <- origin_coordinates %>% select(origin_zip, origin_lat = lat, origin_long = lng)
+dest_coordinates <- dest_coordinates %>% select(dest_zip_clean, dest_lat = lat, dest_long = lng)
+
+# Merge the coordinates back into the main dataframe
+merged_df <- merged_df %>%
+  left_join(origin_coordinates, by = 'origin_zip') %>%
+  left_join(dest_coordinates, by = 'dest_zip_clean')
+
+# Your existing analysis code goes here...
+
+# Export the dataframe with the new latitude and longitude columns
+
+write_csv(merged_df, "blue_star_merged.csv")
 
