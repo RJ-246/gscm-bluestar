@@ -24,10 +24,25 @@ glimpse(merged_df)
 annual_total_freight_paid <- sum(merged_df$freight_paid)*3
 annual_total_freight_paid
 
-avg_LTL_payment <- merged_df %>% group_by(carrier_type) %>% 
+avg_LTL_metrics <- merged_df %>% group_by(carrier_type) %>% 
   filter(carrier_type == 'LTL') %>% 
-  summarize(avg_LTL_payment = mean(freight_paid))
-avg_LTL_payment
+  summarize(avg_LTL_payment = mean(freight_paid),
+            On_Time_Delivery_Rate = mean(on_time),
+            Freight_Damage_Rate = mean(damage_free),
+            Billing_Accuracy_Rate = mean(billed_accurately),
+            LTL_price_per_mile = mean((freight_paid / miles) / (weight /100))
+            )
+
+avg_TL_metrics <- merged_df %>% group_by(carrier_type) %>% 
+  filter(carrier_type == 'TL') %>% 
+  summarize(avg_LTL_payment = mean(freight_paid),
+            On_Time_Delivery_Rate = mean(on_time),
+            Freight_Damage_Rate = mean(damage_free),
+            Billing_Accuracy_Rate = mean(billed_accurately),
+            mile_per_price = mean(freight_paid/miles)
+  )
+glimpse(avg_LTL_metrics)
+glimpse(avg_TL_metrics)
 
 # Checking cities in different states with same name
 merged_df %>%
