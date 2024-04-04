@@ -80,6 +80,7 @@ top_od_pairs <- ltl_shipments %>%
   arrange(desc(total_shipments))
 
 # 4. How many carriers currently serve the top TL (Truckload) origin-destination pairs?
+# Needs update to account for serving the top TL
 tl_shipments <- merged_df %>%
   filter(carrier_type == 'TL')
 
