@@ -145,6 +145,86 @@ average_shipment_size_length <- merged_df %>%
 
 
 
+# Who is making the most mistakes?
+
+# How many companies are there?
+#70
+number_of_unique_scac <- n_distinct(merged_df$scac)
+print(number_of_unique_scac)
+
+# What are their names
+unique_scac_values <- unique(merged_df$scac)
+print(unique_scac_values)
+
+
+# Top Five Worst Companies for not being on time
+scac_not_on_time_ratio <- merged_df %>%
+  group_by(scac) %>%
+  summarise(
+    total_shipments = n(),
+    not_on_time_count = sum(on_time == 0),
+    ratio_not_on_time = not_on_time_count / total_shipments
+  ) %>%
+  arrange(desc(ratio_not_on_time)) %>%
+  slice_head(n = 5)
+
+print(scac_not_on_time_ratio)
+
+
+
+# Top Five Worst Companies for not completing delivery
+scac_not_complete_ratio <- merged_df %>%
+  group_by(scac) %>%
+  summarise(
+    total_shipments = n(),
+    not_complete_count = sum(delivered_complete == 0),
+    ratio_not_complete = not_complete_count / total_shipments
+  ) %>%
+  arrange(desc(ratio_not_complete)) %>%
+  slice_head(n = 5)
+
+print(scac_not_complete_ratio)
+
+
+# Top Five Worst Companies for having damaged goods
+scac_damaged_ratio <- merged_df %>%
+  group_by(scac) %>%
+  summarise(
+    total_shipments = n(),
+    damage_count = sum(damage_free == 0),
+    ratio_damaged = damage_count / total_shipments
+  ) %>%
+  arrange(desc(ratio_damaged)) %>%
+  slice_head(n = 5)
+
+print(scac_damaged_ratio)
+
+
+# Top Five Worst Companies for not billing accurately
+scac_not_billing_accurately_ratio <- merged_df %>%
+  group_by(scac) %>%
+  summarise(
+    total_shipments = n(),
+    not_billing_accurately_count = sum(billed_accurately == 0),
+    ratio_not_billing_accurately = not_billing_accurately_count / total_shipments
+  ) %>%
+  arrange(desc(ratio_not_billing_accurately)) %>%
+  slice_head(n = 5)
+
+print(scac_not_billing_accurately_ratio)
+
+
+
+print(scac_not_on_time_ratio)
+
+print(scac_not_complete_ratio)
+
+print(scac_damaged_ratio)
+
+print(scac_not_billing_accurately_ratio)
+
+
+
 # Derek
 
 # Load necessary libraries
