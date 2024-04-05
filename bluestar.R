@@ -297,16 +297,6 @@ library(zipcodeR)
 library(geosphere)
 library(ggmap)
 
-df_shipments <- read_csv('https://www.dropbox.com/scl/fi/kycaltu2y4e4k2jno8gmu/Blue-Star-2019-1-Shipments.csv?rlkey=fw60qiu5y9ciniheuyub44phz&dl=1')
-
-df_carriers <- read_csv('https://www.dropbox.com/scl/fi/zly5n0tuzpmceczh9dpct/Blue-Star-2019-1-Carriers.csv?rlkey=nz5h6wg2y5fthyy0juw1o36xo&dl=1')
-
-merged_df <- left_join(df_shipments, df_carriers, by = "SCAC") %>% 
-  janitor::clean_names() %>% 
-  mutate(ship_date = mdy(ship_date)) %>% 
-  mutate(freight_paid = parse_number((freight_paid)))
-merged_df %>% glimpse()
-
 #clean destination zip codes
 merged_df <- merged_df %>% 
   mutate(dest_zip_clean = str_extract(dest_zip, "^\\d{5}"))
@@ -392,15 +382,70 @@ TL_carriers_ppm <- merged_df %>%
 LTL_carriers_ppm <- merged_df %>% 
   group_by(scac) %>% 
   filter(carrier_type == "LTL") %>% 
-  summarize(TL_price_per_mile = mean(freight_paid / miles / (weight /100))) %>% 
-  arrange(TL_price_per_mile)
+  summarize(LTL_price_per_mile = mean(freight_paid / miles / (weight /100))) %>% 
+  arrange(LTL_price_per_mile)
+
+#calculates average cost per mile for LTL
+LTL_avg_ppm <- LTL_carriers_ppm %>% 
+  summarize(avg_ppm = mean(LTL_price_per_mile))
+
+LTL_min_ppm <- LTL_carriers_ppm %>% 
+  summarize(min_ppm = min(LTL_price_per_mile))
+
+#calculates average cost per mile for TL
+TL_avg_ppm <- TL_carriers_ppm %>% 
+  summarize(avg_ppm = mean(TL_price_per_mile))
+
+TL_min_ppm <- TL_carriers_ppm %>% 
+  summarize(min_ppm = min(TL_price_per_mile))
+#generates truck weight values
+weight_values = seq(0,45000, by=100)
+#grid of LTL costs
+avg_cost_of_LTL <- (weight_values /100) * 500 * LTL_avg_ppm$avg_ppm
+min_cost_of_LTL <- (weight_values /100) * 500 * LTL_min_ppm$min_ppm
+#grid of TL costs
+avg_cost_of_TL <-  (weight_values / weight_values) * 500 * TL_avg_ppm$avg_ppm
+min_cost_of_TL <-  (weight_values / weight_values) * 500 * TL_min_ppm$min_ppm
+
+avg_costs_for_500_miles <- tibble(weight = weight_values, LTL_cost = avg_cost_of_LTL, TL_cost = avg_cost_of_TL)
+min_costs_for_500_miles <- tibble(weight = weight_values, LTL_cost = min_cost_of_LTL, TL_cost = min_cost_of_TL)
+
+avg_intersection_weight <- avg_costs_for_500_miles$weight[which.min(abs(avg_costs_for_500_miles$LTL_cost - avg_costs_for_500_miles$TL_cost))]
+avg_intersection_y <- avg_costs_for_500_miles$LTL_cost[which.min(abs(avg_costs_for_500_miles$LTL_cost - avg_costs_for_500_miles$TL_cost))]
+
+min_intersection_weight <- min_costs_for_500_miles$weight[which.min(abs(min_costs_for_500_miles$LTL_cost - min_costs_for_500_miles$TL_cost))]
+min_intersection_y <- min_costs_for_500_miles$LTL_cost[which.min(abs(min_costs_for_500_miles$LTL_cost - min_costs_for_500_miles$TL_cost))]
+
+avg_cost_plot <- avg_costs_for_500_miles %>% 
+  ggplot(mapping =  aes(x = weight)) +
+  geom_line(aes(y = LTL_cost, color = "red"))+
+  geom_line(aes(y = TL_cost, color = "blue"))+
+  geom_point(x = avg_intersection_weight, y = avg_intersection_y, size = 3)+
+  annotate("text", x = avg_intersection_weight, y = avg_intersection_y, label = paste("Weight = ", avg_intersection_weight, "lbs"), vjust= 1.25, hjust=-0.1)+
+  labs(
+    x= "Shipment Weight (lbs)",
+    y = "Cost of Shipment in USD",
+    title = "Cost of Shipment by Weight, LTL and TL (Average, 500 Miles)"
+  )+
+  scale_color_manual(name = "Type of Shipment", values = c("red" = "red", "blue" = 'blue'), labels = c('TL Shipment', "LTL Shipment"))
+
+min_cost_plot <- min_costs_for_500_miles %>% 
+  ggplot(mapping = aes(x = weight)) +
+  geom_line(aes(y = LTL_cost, color = "red"))+
+  geom_line(aes(y = TL_cost, color = "blue"))+
+  geom_point(x = min_intersection_weight, y = min_intersection_y, size = 3)+
+  annotate("text", x = min_intersection_weight, y = min_intersection_y, label = paste("Weight = ", min_intersection_weight, "lbs"), vjust= 1.25, hjust=-0.1)+
+  labs(
+    x= "Shipment Weight (lbs)",
+    y = "Cost of Shipment in USD",
+    title = "Cost of Shipment by Weight, LTL and TL (Minimum, 500 Miles)"
+  )+
+  scale_color_manual(name = "Type of Shipment", values = c("red" = "red", "blue" = 'blue'), labels = c('TL Shipment', "LTL Shipment"))
 
 merged_df %>% 
   filter(scac == "TWEX") %>% 
   select(freight_paid, miles, weight) %>% 
   arrange(freight_paid)
-
-
 
 
 # added by Derek
