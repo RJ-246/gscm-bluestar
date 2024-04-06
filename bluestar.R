@@ -448,6 +448,62 @@ merged_df %>%
   arrange(freight_paid)
 
 
+#investigating best carriers
+good_tl_carriers <- merged_df %>% 
+  filter(carrier_type == "TL") %>% 
+  group_by(scac, carrier_type) %>% 
+  summarize(
+    shipments = n(),
+    complete_rate = mean(delivered_complete),
+    undamaged_rate = mean(damage_free),
+    billed_accurate_rate = mean(billed_accurately),
+    avg_rate = (mean(freight_paid)/ mean(miles)),
+    quality = ((complete_rate + undamaged_rate + billed_accurate_rate) /3)
+  ) %>% 
+  arrange(desc(quality), avg_rate) %>% 
+  filter(shipments > 25) %>% 
+  #arrange(desc(complete_rate), desc(undamaged_rate), desc(billed_accurate_rate)) %>% 
+  print(n=50)
+
+best_tl_carriers_plot <- good_tl_carriers %>% 
+  ggplot(mapping = aes(x = avg_rate, y = quality))+
+  geom_point(mapping = aes(color = scac))+
+  geom_smooth(method = 'lm', se = FALSE)+
+  labs(
+    title= "Relationship of Average Quality and Average Rate for TL Carriers",
+    color = "Carrier",
+    x = "Average Rate",
+    y = "Average Quality"
+  )
+
+
+good_ltl_carriers <- merged_df %>% 
+  filter(carrier_type == "LTL") %>% 
+  group_by(scac, carrier_type) %>% 
+  summarize(
+    shipments = n(),
+    complete_rate = mean(delivered_complete),
+    undamaged_rate = mean(damage_free),
+    billed_accurate_rate = mean(billed_accurately),
+    avg_rate = (mean(freight_paid)/ mean(miles) / mean(weight/100)),
+    quality = ((complete_rate + undamaged_rate + billed_accurate_rate) /3)
+  ) %>% 
+  arrange(desc(quality), avg_rate) %>% 
+  filter(shipments > 25) %>% 
+  #arrange(desc(complete_rate), desc(undamaged_rate), desc(billed_accurate_rate)) %>% 
+  print(n=50)
+
+best_ltl_carriers_plot <- good_ltl_carriers %>% 
+  ggplot(mapping = aes(x = avg_rate, y = quality))+
+  geom_point(mapping = aes(color = scac))+
+  geom_smooth(method='lm', se = FALSE)+
+  labs(
+    title= "Relationship of Average Quality and Average Rate for LTL Carriers",
+    color = "Carrier",
+    x = "Average Rate",
+    y = "Average Quality"
+  )
+
 # added by Derek
 
 
