@@ -351,7 +351,7 @@ missing_distances <- missing_distances %>%
   relocate(origin_zipcode) %>% 
   arrange(origin_zipcode, dest_zip) %>% 
   group_by(origin_zipcode, dest_zip) %>% 
-  slice_min(distance, n=1)
+  slice_min(distance, n=1) #%>% 
   #select(-c('lat', 'dest_lon', 'dest_lat','lng'))
 
 #replace NAs in original distance calculation with new ones
@@ -408,7 +408,7 @@ long_cost <- if_else(mile_values >= 250, mile_values * (binned_rates %>% filter(
 
 costs = tibble(miles = mile_values, short_cost = short_cost, medium_short_cost, medium_long_cost, long_cost)
 
-costs %>% 
+costs_binned_range <- costs %>% 
   ggplot(mapping = aes(x = miles))+
   geom_line(aes(y = short_cost), color = "red")+
   geom_line(aes(y = medium_short_cost), color = "green")+
@@ -447,6 +447,59 @@ merged_df %>%
   arrange(desc(std_dev)) %>% 
   ggplot(mapping = aes(x = scac, y = std_dev))+
   geom_point()
+
+#Z Scores?
+
+#Variance based on carrier type
+merged_df %>% 
+  group_by(carrier_type) %>% 
+  mutate(rate = if_else(carrier_type == "LTL", (freight_paid/miles/(weight/100)), freight_paid/miles)) %>% 
+  mutate(zRate = scale(rate, center=TRUE, scale=TRUE)) %>% 
+  summarize(rate_std_dev =sd(rate), mean_rate = mean(rate))
+
+# Total variance
+merged_df %>% 
+  mutate(rate = if_else(carrier_type == "LTL", (freight_paid/miles/(weight/100)), freight_paid/miles)) %>% 
+  mutate(zRate = scale(rate, center=TRUE, scale=TRUE)) %>% 
+  summarize(rate_std_dev =sd(rate), mean_rate = mean(rate))
+
+rate_variance_TL <-  merged_df %>% 
+  filter(carrier_type %in% c("TL")) %>% 
+  mutate(rate = freight_paid/miles) %>% 
+  #filter(rate <250) %>% 
+  group_by(scac) %>% 
+  #filter(n() > 100) %>% 
+  ggplot(aes(x = miles, y = log(rate))) +
+  geom_point()+
+  geom_smooth(method="lm")
+  #facet_wrap(~scac)
+
+
+rate_variance_LTL <- merged_df %>% 
+  filter(carrier_type %in% c("LTL")) %>% 
+  mutate(rate = freight_paid/miles/(weight/100)) %>% 
+  #filter(rate <100 &  miles < 6000) %>% 
+  group_by(scac) %>% 
+  filter(n() > 100) %>% 
+  ggplot(aes(x = miles, y = log(rate))) +
+  geom_point(aes(color = weight))+
+  geom_smooth(method = "lm")+
+  labs(
+    title="Log of Rate and Miles, and Weight",
+    x = "Miles",
+    y = "Log(Rate)",
+    color = "Weight"
+  )+theme_bw()
+
+rate_variance_AIR <- merged_df %>% 
+  filter(carrier_type %in% c("AIR")) %>% 
+  mutate(rate = freight_paid/miles) %>% 
+  #filter(rate <250) %>% 
+  group_by(scac) %>% 
+  filter(n() > 100) %>% 
+  ggplot(aes(x = miles, y = log(rate))) +
+  geom_point()+
+  geom_smooth(method="lm", se=FALSE)
 #calculates average cost per mile for LTL
 LTL_avg_ppm <- LTL_carriers_ppm %>% 
   summarize(avg_ppm = mean(LTL_price_per_mile))
@@ -522,8 +575,8 @@ good_tl_carriers <- merged_df %>%
     avg_rate = (mean(freight_paid)/ mean(miles)),
     quality = ((complete_rate + undamaged_rate + billed_accurate_rate) /3)
   ) %>% 
-  arrange(desc(quality), avg_rate) #%>% 
-  #ilter(shipments > 25) %>% 
+  arrange(desc(quality), avg_rate) %>% 
+  filter(shipments > 25) #%>% 
   #arrange(desc(complete_rate), desc(undamaged_rate), desc(billed_accurate_rate)) %>% 
   #print(n=50)
 
@@ -550,8 +603,8 @@ good_ltl_carriers <- merged_df %>%
     avg_rate = (mean(freight_paid)/ mean(miles) / mean(weight/100)),
     quality = ((complete_rate + undamaged_rate + billed_accurate_rate) /3)
   ) %>% 
-  arrange(desc(quality), avg_rate) #%>% 
-  #filter(shipments > 25) %>% 
+  arrange(desc(quality), avg_rate) %>% 
+  filter(shipments > 25) #%>% 
   #arrange(desc(complete_rate), desc(undamaged_rate), desc(billed_accurate_rate)) %>% 
   #print(n=50)
 
