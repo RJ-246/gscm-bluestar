@@ -408,7 +408,7 @@ long_cost <- if_else(mile_values >= 250, mile_values * (binned_rates %>% filter(
 
 costs = tibble(miles = mile_values, short_cost = short_cost, medium_short_cost, medium_long_cost, long_cost)
 
-costs %>% 
+costs_binned_range <- costs %>% 
   ggplot(mapping = aes(x = miles))+
   geom_line(aes(y = short_cost), color = "red")+
   geom_line(aes(y = medium_short_cost), color = "green")+
@@ -449,8 +449,16 @@ merged_df %>%
   geom_point()
 
 #Z Scores?
+
+#Variance based on carrier type
 merged_df %>% 
   group_by(carrier_type) %>% 
+  mutate(rate = if_else(carrier_type == "LTL", (freight_paid/miles/(weight/100)), freight_paid/miles)) %>% 
+  mutate(zRate = scale(rate, center=TRUE, scale=TRUE)) %>% 
+  summarize(rate_std_dev =sd(rate), mean_rate = mean(rate))
+
+# Total variance
+merged_df %>% 
   mutate(rate = if_else(carrier_type == "LTL", (freight_paid/miles/(weight/100)), freight_paid/miles)) %>% 
   mutate(zRate = scale(rate, center=TRUE, scale=TRUE)) %>% 
   summarize(rate_std_dev =sd(rate), mean_rate = mean(rate))
@@ -458,31 +466,40 @@ merged_df %>%
 rate_variance_TL <-  merged_df %>% 
   filter(carrier_type %in% c("TL")) %>% 
   mutate(rate = freight_paid/miles) %>% 
-  filter(rate <250) %>% 
+  #filter(rate <250) %>% 
   group_by(scac) %>% 
-  filter(n() > 100) %>% 
-  ggplot(aes(x = miles, y = rate)) +
-  geom_point()
+  #filter(n() > 100) %>% 
+  ggplot(aes(x = miles, y = log(rate))) +
+  geom_point()+
+  geom_smooth(method="lm")
   #facet_wrap(~scac)
 
 
 rate_variance_LTL <- merged_df %>% 
   filter(carrier_type %in% c("LTL")) %>% 
   mutate(rate = freight_paid/miles/(weight/100)) %>% 
-  filter(rate <100 &  miles < 6000) %>% 
+  #filter(rate <100 &  miles < 6000) %>% 
   group_by(scac) %>% 
   filter(n() > 100) %>% 
-  ggplot(aes(x = miles, y = rate)) +
-  geom_point()
+  ggplot(aes(x = miles, y = log(rate))) +
+  geom_point(aes(color = weight))+
+  geom_smooth(method = "lm")+
+  labs(
+    title="Log of Rate and Miles, and Weight",
+    x = "Miles",
+    y = "Log(Rate)",
+    color = "Weight"
+  )+theme_bw()
 
 rate_variance_AIR <- merged_df %>% 
   filter(carrier_type %in% c("AIR")) %>% 
   mutate(rate = freight_paid/miles) %>% 
-  filter(rate <250) %>% 
+  #filter(rate <250) %>% 
   group_by(scac) %>% 
   filter(n() > 100) %>% 
-  ggplot(aes(x = miles, y = rate)) +
-  geom_point()
+  ggplot(aes(x = miles, y = log(rate))) +
+  geom_point()+
+  geom_smooth(method="lm", se=FALSE)
 #calculates average cost per mile for LTL
 LTL_avg_ppm <- LTL_carriers_ppm %>% 
   summarize(avg_ppm = mean(LTL_price_per_mile))
