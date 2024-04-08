@@ -688,8 +688,27 @@ merged_df <- merged_df %>%
               select(dest_zip_clean, optimized_origin_zip, optimized_origin_lat, optimized_origin_long),
             by = 'dest_zip_clean')
 
+count_of_optimized_shipments <- merged_df %>% group_by(optimized_origin_zip, dest_zip_clean) %>% 
+  summarize(num_shipments = n())
 
+total_milage_optimized <- count_of_optimized_shipments %>% left_join((shortest_pairs_final %>% select(-c(optimized_origin_lat:dest_long))), by= c('optimized_origin_zip', "dest_zip_clean")) %>% 
+  mutate(distance = if_else(distance == 0, 10, distance)) %>% 
+  mutate(total_milage = num_shipments * distance)
 
+mean_rate <- merged_df %>% 
+  filter(carrier_type == "TL") %>% 
+  summarize(mean_rate = mean(freight_paid/miles)) %>% 
+  pull(mean_rate)
+
+total_milage_optimized %>% 
+  mutate(total_cost = total_milage * mean_rate) %>% 
+  ungroup() %>% 
+  summarize(
+    gross_cost = sum(total_cost)
+  )
+merged_df %>% 
+  ungroup() %>% 
+  summarize(gross_cost = sum(freight_paid))
 
 
 # Fill missing destination lat/long
