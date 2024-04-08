@@ -363,7 +363,12 @@ shortest_pairs <- shortest_pairs %>% left_join(missing_distances, by = c('origin
 #get just the shortest distance between each origin/dest pair
 shortest_pairs <- shortest_pairs %>% 
   group_by(dest_zip_clean) %>% 
-  slice_min(n=1, order_by = distance)
+  slice_min(n=3, order_by = distance)
+
+merged_df %>% count(dest_zip == "01020")
+430 * (49 * 16.9)
+430 * (164 *2.07)
+430 * (446 * 1.44)
 
 distance_plot <- shortest_pairs %>% 
   ggplot(mapping = aes(x = distance))+
@@ -385,6 +390,63 @@ LTL_carriers_ppm <- merged_df %>%
   summarize(LTL_price_per_mile = mean(freight_paid / miles / (weight /100))) %>% 
   arrange(LTL_price_per_mile)
 
+#calulcate rates based on distance groupings to find cheapest distance
+binned_distances <- merged_df %>% 
+  mutate(distance_bins = if_else(miles < 50, "<50", if_else(miles < 100, "50-100", if_else(miles<250, "100-250", "250+")))) %>%
+  mutate(rate = if_else(carrier_type == "LTL", (freight_paid/miles/(weight/100)), freight_paid/miles)) %>% 
+  group_by(distance_bins) 
+  
+binned_rates <- binned_distances %>% 
+  summarize(avg_rate = mean(rate))
+
+mile_values = seq(0,500, by=5)
+
+short_cost <- if_else(mile_values < 50, mile_values * (binned_rates %>% filter(distance_bins == "<50") %>% select(avg_rate) %>% pull(avg_rate)), NA) 
+medium_short_cost <- if_else(mile_values >=50 & mile_values < 100, mile_values * (binned_rates %>% filter(distance_bins == "50-100") %>% select(avg_rate) %>% pull(avg_rate)), NA) 
+medium_long_cost <- if_else(mile_values >=100 & mile_values < 250, mile_values * (binned_rates %>% filter(distance_bins == "100-250") %>% select(avg_rate) %>% pull(avg_rate)) , NA)
+long_cost <- if_else(mile_values >= 250, mile_values * (binned_rates %>% filter(distance_bins == "250+") %>% select(avg_rate) %>% pull(avg_rate)), NA) 
+
+costs = tibble(miles = mile_values, short_cost = short_cost, medium_short_cost, medium_long_cost, long_cost)
+
+costs %>% 
+  ggplot(mapping = aes(x = miles))+
+  geom_line(aes(y = short_cost), color = "red")+
+  geom_line(aes(y = medium_short_cost), color = "green")+
+  geom_line(aes(y = medium_long_cost), color = "blue")+
+  geom_line(aes(y = long_cost), color = "purple")+
+  scale_x_continuous(breaks = seq(0,500, by = 10), labels = seq(0,500, by =10))
+
+binned_distances %>% 
+  ggplot(mapping = aes(x =miles, y = rate, color = distance_bins))+
+  geom_point()
+
+#graph to show rate variance
+merged_df %>%
+  filter(carrier_type == "AIR") %>% 
+  ggplot(mapping = aes(x = (freight_paid/miles), color = carrier_type)) +
+  geom_boxplot()+
+  facet_grid(~ carrier_type, scales='free')
+
+merged_df %>%
+  filter(carrier_type == "TL" & (freight_paid/miles) < 5) %>% 
+  ggplot(mapping = aes(x = (freight_paid/miles), color = carrier_type)) +
+  geom_boxplot()+
+  facet_grid(~ carrier_type, scales='free')
+merged_df %>%
+  filter(carrier_type == "LTL" & (freight_paid/miles/(weight/100)) <1) %>% 
+  ggplot(mapping = aes(x = (freight_paid/miles/ (weight/100)), color = carrier_type)) +
+  geom_boxplot()+
+  facet_grid(~ carrier_type, scales='free')
+
+merged_df %>% 
+  group_by(scac) %>% 
+  filter(carrier_type == "TL") %>% 
+  mutate(rate = (freight_paid/miles)) %>% 
+  summarize(rate_variance = var(rate),
+            std_dev = sd(rate)) %>% 
+  arrange(desc(std_dev)) %>% 
+  ggplot(mapping = aes(x = scac, y = std_dev))+
+  geom_point()
 #calculates average cost per mile for LTL
 LTL_avg_ppm <- LTL_carriers_ppm %>% 
   summarize(avg_ppm = mean(LTL_price_per_mile))
@@ -460,10 +522,10 @@ good_tl_carriers <- merged_df %>%
     avg_rate = (mean(freight_paid)/ mean(miles)),
     quality = ((complete_rate + undamaged_rate + billed_accurate_rate) /3)
   ) %>% 
-  arrange(desc(quality), avg_rate) %>% 
-  filter(shipments > 25) %>% 
+  arrange(desc(quality), avg_rate) #%>% 
+  #ilter(shipments > 25) %>% 
   #arrange(desc(complete_rate), desc(undamaged_rate), desc(billed_accurate_rate)) %>% 
-  print(n=50)
+  #print(n=50)
 
 best_tl_carriers_plot <- good_tl_carriers %>% 
   ggplot(mapping = aes(x = avg_rate, y = quality))+
@@ -488,10 +550,10 @@ good_ltl_carriers <- merged_df %>%
     avg_rate = (mean(freight_paid)/ mean(miles) / mean(weight/100)),
     quality = ((complete_rate + undamaged_rate + billed_accurate_rate) /3)
   ) %>% 
-  arrange(desc(quality), avg_rate) %>% 
-  filter(shipments > 25) %>% 
+  arrange(desc(quality), avg_rate) #%>% 
+  #filter(shipments > 25) %>% 
   #arrange(desc(complete_rate), desc(undamaged_rate), desc(billed_accurate_rate)) %>% 
-  print(n=50)
+  #print(n=50)
 
 best_ltl_carriers_plot <- good_ltl_carriers %>% 
   ggplot(mapping = aes(x = avg_rate, y = quality))+
