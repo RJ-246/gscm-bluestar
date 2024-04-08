@@ -324,7 +324,7 @@ shortest_pairs <- ori_dest_pairs %>%
 
 #write_delim(geocoded_zips, file= "/Users/rjackso3/Documents/School_Stuff/Winter_2024/GSCM_530/gscm-bluestar/geocoded_zips.csv", delim = ",")
 
-geocoded_zips <- read_csv("/Users/rjackso3/Documents/School_Stuff/Winter_2024/GSCM_530/gscm-bluestar/geocoded_zips.csv")
+geocoded_zips <- read_csv("C:/Users/derek/OneDrive/Desktop/School/MISM 2/GSCM/gscm-bluestar/geocoded_zips.csv")
 
 #takes zip codes back out of geocoded
 geocoded_dests <- geocoded_zips %>% 
@@ -351,8 +351,8 @@ missing_distances <- missing_distances %>%
   relocate(origin_zipcode) %>% 
   arrange(origin_zipcode, dest_zip) %>% 
   group_by(origin_zipcode, dest_zip) %>% 
-  slice_min(distance, n=1) %>% 
-  select(-c('lat', 'dest_lon', 'dest_lat','lng'))
+  slice_min(distance, n=1)
+  #select(-c('lat', 'dest_lon', 'dest_lat','lng'))
 
 #replace NAs in original distance calculation with new ones
 shortest_pairs <- shortest_pairs %>% left_join(missing_distances, by = c('origin_zip' = "origin_zipcode", "dest_zip_clean" = "dest_zip")) %>% 
@@ -363,7 +363,7 @@ shortest_pairs <- shortest_pairs %>% left_join(missing_distances, by = c('origin
 #get just the shortest distance between each origin/dest pair
 shortest_pairs <- shortest_pairs %>% 
   group_by(dest_zip_clean) %>% 
-  slice_min(n=3, order_by = distance)
+  slice_min(n=1, order_by = distance)
 
 merged_df %>% count(dest_zip == "01020")
 430 * (49 * 16.9)
@@ -593,9 +593,61 @@ merged_df <- merged_df %>%
   left_join(origin_coordinates, by = 'origin_zip') %>%
   left_join(dest_coordinates, by = 'dest_zip_clean')
 
+
+# Join shortest_pairs with latitude and longitude coordinates
+
+
+origin_coordinates <- zip_code_db %>%
+  select(zipcode, lat, lng) %>%
+  rename(origin_zip = zipcode, lat = lat, lng = lng)
+
+dest_coordinates <- zip_code_db %>%
+  select(zipcode, lat, lng) %>%
+  rename(dest_zip_clean = zipcode, dest_lat = lat, dest_long = lng)
+
+# Merge latitude and longitude information
+shortest_pairs <- shortest_pairs %>%
+  left_join(origin_coordinates, by = "origin_zip") %>%
+  left_join(dest_coordinates, by = "dest_zip_clean")
+
+shortest_pairs <- shortest_pairs %>%
+  mutate(origin_lat = ifelse(is.na(lat.x), lat.y, lat.x),
+         origin_long = ifelse(is.na(lng.x), lng.y, lng.x),
+         dest_lat = ifelse(is.na(dest_lat.x), dest_lat.y, dest_lat.x),
+         dest_long = ifelse(is.na(dest_lon), dest_long, dest_lon))
+
+
+# Select only the required columns
+shortest_pairs_final <- shortest_pairs %>%
+  select(origin_zip, dest_zip_clean, distance, origin_lat, origin_long, dest_lat, dest_long)
+
+
+
+
+shortest_pairs_final <- shortest_pairs_final %>% 
+  rename(optimized_origin_zip = origin_zip, 
+         optimized_origin_lat = origin_lat, 
+         optimized_origin_long = origin_long)
+
+# Now join this data with merged_df based on dest_zip_clean
+merged_df <- merged_df %>%
+  left_join(shortest_pairs_final %>% 
+              select(dest_zip_clean, optimized_origin_zip, optimized_origin_lat, optimized_origin_long),
+            by = 'dest_zip_clean')
+
+
+
+
+
+# Fill missing destination lat/long
+
+
+
+
+
 # Your existing analysis code goes here...
 
 # Export the dataframe with the new latitude and longitude columns
 
-write_csv(merged_df, "blue_star_merged.csv")
+write_csv(merged_df, "optimized_routing.csv")
 
