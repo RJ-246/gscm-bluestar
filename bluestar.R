@@ -58,8 +58,9 @@ plot_2 <- merged_df %>%
   filter(carrier_type %in% c("TL")) %>% 
   group_by(scac) %>% 
   filter(n() > 100) %>% 
-  ggplot(aes(x = miles, y = freight_paid, size = weight)) +
+  ggplot(aes(x = miles, y = freight_paid)) +
   geom_point()+
+  geom_smooth()+
   facet_wrap(~scac)
 plot_2
 
@@ -79,6 +80,38 @@ top_dest_org_pair <- merged_df %>% group_by(carrier_type, origin_city, dest_city
   filter(carrier_type == 'LTL') %>% 
   summarize(dest_org_pair_count = n()) %>% 
   arrange(desc(dest_org_pair_count))
+
+summarized_df <- merged_df %>%
+  filter(carrier_type %in% c("TL","LTL")) %>% 
+  group_by(origin_city, dest_city, dest_state, ship_date, carrier_type) %>%
+  summarize(weight_sum = sum(weight),
+            mean_rate = mean(rate),
+            mean_miles = mean(miles))
+
+
+
+filtered_df <- summarized_df %>%
+  mutate(
+    trucks = ceiling(weight_sum/45000),
+    left_over = weight_sum - ((trucks-1)*45000),
+    reduced_price = (if_else(
+      carrier_type == 'LTL',
+      (mean_miles * mean_rate) / (45000 / 100),
+      mean_miles * mean_rate
+    ) * (trucks-1)) +
+  if_else(
+    carrier_type == 'LTL',
+    (mean_miles * mean_rate) / (left_over / 100),
+    mean_miles * mean_rate
+  )
+  )
+filtered_df
+sum(merged_df$freight_paid) 
+trucks_only_df <- merged_df %>% filter(carrier_type %in% c("TL","LTL"))
+sum(trucks_only_df$freight_paid) 
+
+sum(filtered_df$reduced_price)
+
 
 # Gavin
 
@@ -325,6 +358,8 @@ shortest_pairs <- ori_dest_pairs %>%
 #write_delim(geocoded_zips, file= "/Users/rjackso3/Documents/School_Stuff/Winter_2024/GSCM_530/gscm-bluestar/geocoded_zips.csv", delim = ",")
 
 geocoded_zips <- read_csv("/Users/rjackso3/Documents/School_Stuff/Winter_2024/GSCM_530/gscm-bluestar/geocoded_zips.csv")
+geocoded_zips <- read_csv("/Users/dalla/Documents/Assorted BYU School stuff/Winter 2024/IS 555/gscm-bluestar/geocoded_zips.csv")
+
 
 #takes zip codes back out of geocoded
 geocoded_dests <- geocoded_zips %>% 
@@ -522,8 +557,9 @@ good_tl_carriers <- merged_df %>%
     avg_rate = (mean(freight_paid)/ mean(miles)),
     quality = ((complete_rate + undamaged_rate + billed_accurate_rate) /3)
   ) %>% 
-  arrange(desc(quality), avg_rate) #%>% 
-  #ilter(shipments > 25) %>% 
+  arrange(desc(quality), avg_rate) %>% 
+  filter(shipments > 25) 
+  #%>% 
   #arrange(desc(complete_rate), desc(undamaged_rate), desc(billed_accurate_rate)) %>% 
   #print(n=50)
 
@@ -550,8 +586,9 @@ good_ltl_carriers <- merged_df %>%
     avg_rate = (mean(freight_paid)/ mean(miles) / mean(weight/100)),
     quality = ((complete_rate + undamaged_rate + billed_accurate_rate) /3)
   ) %>% 
-  arrange(desc(quality), avg_rate) #%>% 
-  #filter(shipments > 25) %>% 
+  arrange(desc(quality), avg_rate) %>% 
+  filter(shipments > 25) 
+  #%>% 
   #arrange(desc(complete_rate), desc(undamaged_rate), desc(billed_accurate_rate)) %>% 
   #print(n=50)
 
