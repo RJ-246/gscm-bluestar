@@ -485,6 +485,8 @@ merged_df %>%
   ggplot(mapping = aes(x = scac, y = std_dev))+
   geom_point()
 
+#carrier proliferations
+
 #Z Scores?
 
 #Variance based on carrier type
@@ -507,9 +509,14 @@ rate_variance_TL <-  merged_df %>%
   group_by(scac) %>% 
   #filter(n() > 100) %>% 
   ggplot(aes(x = miles, y = log(rate))) +
-  geom_point()+
-  geom_smooth(method="lm")
-  #facet_wrap(~scac)
+  geom_point(aes(color = weight))+
+  #geom_smooth(method="lm")+
+  labs(
+    title="Log of Rate and Miles, colored by Weight (TL Shipments)",
+    x = "Miles",
+    y = "Log(Rate)",
+    color = "Weight"
+  )+theme_bw()
 
 
 rate_variance_LTL <- merged_df %>% 
@@ -520,9 +527,9 @@ rate_variance_LTL <- merged_df %>%
   filter(n() > 100) %>% 
   ggplot(aes(x = miles, y = log(rate))) +
   geom_point(aes(color = weight))+
-  geom_smooth(method = "lm")+
+  #geom_smooth(method = "lm")+
   labs(
-    title="Log of Rate and Miles, and Weight",
+    title="Log of Rate and Miles, colored by Weight (LTL Shipments)",
     x = "Miles",
     y = "Log(Rate)",
     color = "Weight"
@@ -535,8 +542,14 @@ rate_variance_AIR <- merged_df %>%
   group_by(scac) %>% 
   filter(n() > 100) %>% 
   ggplot(aes(x = miles, y = log(rate))) +
-  geom_point()+
-  geom_smooth(method="lm", se=FALSE)
+  geom_point(aes(color = weight))+
+  #geom_smooth(method="lm", se=FALSE)
+  labs(
+    title="Log of Rate and Miles, colored by Weight (Air Shipments)",
+    x = "Miles",
+    y = "Log(Rate)",
+    color = "Weight"
+  )+theme_bw()
 #calculates average cost per mile for LTL
 LTL_avg_ppm <- LTL_carriers_ppm %>% 
   summarize(avg_ppm = mean(LTL_price_per_mile))
