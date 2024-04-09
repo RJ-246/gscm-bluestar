@@ -715,6 +715,21 @@ best_air_carriers_plot
 # Beat AIR Carrier: EUSA
 
 
+
+# Cost estimate code
+
+# TL estimate:
+
+# LTL estimate:
+
+# Air estimate: 0.079420865 now vs. 0.03124791, means 0.048172955 saved per rate
+
+
+
+
+
+
+
 # added by Derek
 
 
