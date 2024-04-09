@@ -357,13 +357,11 @@ shortest_pairs <- ori_dest_pairs %>%
 
 #write_delim(geocoded_zips, file= "/Users/rjackso3/Documents/School_Stuff/Winter_2024/GSCM_530/gscm-bluestar/geocoded_zips.csv", delim = ",")
 
-<<<<<<< HEAD
+
 geocoded_zips <- read_csv("/Users/rjackso3/Documents/School_Stuff/Winter_2024/GSCM_530/gscm-bluestar/geocoded_zips.csv")
 geocoded_zips <- read_csv("/Users/dalla/Documents/Assorted BYU School stuff/Winter 2024/IS 555/gscm-bluestar/geocoded_zips.csv")
-
-=======
 geocoded_zips <- read_csv("C:/Users/derek/OneDrive/Desktop/School/MISM 2/GSCM/gscm-bluestar/geocoded_zips.csv")
->>>>>>> 6055947fd5b3bf09b533e81900844427ba6fba4a
+
 
 #takes zip codes back out of geocoded
 geocoded_dests <- geocoded_zips %>% 
@@ -615,12 +613,8 @@ good_tl_carriers <- merged_df %>%
     quality = ((complete_rate + undamaged_rate + billed_accurate_rate) /3)
   ) %>% 
   arrange(desc(quality), avg_rate) %>% 
-<<<<<<< HEAD
   filter(shipments > 25) 
   #%>% 
-=======
-  filter(shipments > 25) #%>% 
->>>>>>> 6055947fd5b3bf09b533e81900844427ba6fba4a
   #arrange(desc(complete_rate), desc(undamaged_rate), desc(billed_accurate_rate)) %>% 
   #print(n=50)
 
