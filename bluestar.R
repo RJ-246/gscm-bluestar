@@ -357,9 +357,13 @@ shortest_pairs <- ori_dest_pairs %>%
 
 #write_delim(geocoded_zips, file= "/Users/rjackso3/Documents/School_Stuff/Winter_2024/GSCM_530/gscm-bluestar/geocoded_zips.csv", delim = ",")
 
+<<<<<<< HEAD
 geocoded_zips <- read_csv("/Users/rjackso3/Documents/School_Stuff/Winter_2024/GSCM_530/gscm-bluestar/geocoded_zips.csv")
 geocoded_zips <- read_csv("/Users/dalla/Documents/Assorted BYU School stuff/Winter 2024/IS 555/gscm-bluestar/geocoded_zips.csv")
 
+=======
+geocoded_zips <- read_csv("C:/Users/derek/OneDrive/Desktop/School/MISM 2/GSCM/gscm-bluestar/geocoded_zips.csv")
+>>>>>>> 6055947fd5b3bf09b533e81900844427ba6fba4a
 
 #takes zip codes back out of geocoded
 geocoded_dests <- geocoded_zips %>% 
@@ -386,8 +390,8 @@ missing_distances <- missing_distances %>%
   relocate(origin_zipcode) %>% 
   arrange(origin_zipcode, dest_zip) %>% 
   group_by(origin_zipcode, dest_zip) %>% 
-  slice_min(distance, n=1) %>% 
-  select(-c('lat', 'dest_lon', 'dest_lat','lng'))
+  slice_min(distance, n=1) #%>% 
+  #select(-c('lat', 'dest_lon', 'dest_lat','lng'))
 
 #replace NAs in original distance calculation with new ones
 shortest_pairs <- shortest_pairs %>% left_join(missing_distances, by = c('origin_zip' = "origin_zipcode", "dest_zip_clean" = "dest_zip")) %>% 
@@ -398,7 +402,7 @@ shortest_pairs <- shortest_pairs %>% left_join(missing_distances, by = c('origin
 #get just the shortest distance between each origin/dest pair
 shortest_pairs <- shortest_pairs %>% 
   group_by(dest_zip_clean) %>% 
-  slice_min(n=3, order_by = distance)
+  slice_min(n=1, order_by = distance)
 
 merged_df %>% count(dest_zip == "01020")
 430 * (49 * 16.9)
@@ -443,7 +447,7 @@ long_cost <- if_else(mile_values >= 250, mile_values * (binned_rates %>% filter(
 
 costs = tibble(miles = mile_values, short_cost = short_cost, medium_short_cost, medium_long_cost, long_cost)
 
-costs %>% 
+costs_binned_range <- costs %>% 
   ggplot(mapping = aes(x = miles))+
   geom_line(aes(y = short_cost), color = "red")+
   geom_line(aes(y = medium_short_cost), color = "green")+
@@ -482,6 +486,59 @@ merged_df %>%
   arrange(desc(std_dev)) %>% 
   ggplot(mapping = aes(x = scac, y = std_dev))+
   geom_point()
+
+#Z Scores?
+
+#Variance based on carrier type
+merged_df %>% 
+  group_by(carrier_type) %>% 
+  mutate(rate = if_else(carrier_type == "LTL", (freight_paid/miles/(weight/100)), freight_paid/miles)) %>% 
+  mutate(zRate = scale(rate, center=TRUE, scale=TRUE)) %>% 
+  summarize(rate_std_dev =sd(rate), mean_rate = mean(rate))
+
+# Total variance
+merged_df %>% 
+  mutate(rate = if_else(carrier_type == "LTL", (freight_paid/miles/(weight/100)), freight_paid/miles)) %>% 
+  mutate(zRate = scale(rate, center=TRUE, scale=TRUE)) %>% 
+  summarize(rate_std_dev =sd(rate), mean_rate = mean(rate))
+
+rate_variance_TL <-  merged_df %>% 
+  filter(carrier_type %in% c("TL")) %>% 
+  mutate(rate = freight_paid/miles) %>% 
+  #filter(rate <250) %>% 
+  group_by(scac) %>% 
+  #filter(n() > 100) %>% 
+  ggplot(aes(x = miles, y = log(rate))) +
+  geom_point()+
+  geom_smooth(method="lm")
+  #facet_wrap(~scac)
+
+
+rate_variance_LTL <- merged_df %>% 
+  filter(carrier_type %in% c("LTL")) %>% 
+  mutate(rate = freight_paid/miles/(weight/100)) %>% 
+  #filter(rate <100 &  miles < 6000) %>% 
+  group_by(scac) %>% 
+  filter(n() > 100) %>% 
+  ggplot(aes(x = miles, y = log(rate))) +
+  geom_point(aes(color = weight))+
+  geom_smooth(method = "lm")+
+  labs(
+    title="Log of Rate and Miles, and Weight",
+    x = "Miles",
+    y = "Log(Rate)",
+    color = "Weight"
+  )+theme_bw()
+
+rate_variance_AIR <- merged_df %>% 
+  filter(carrier_type %in% c("AIR")) %>% 
+  mutate(rate = freight_paid/miles) %>% 
+  #filter(rate <250) %>% 
+  group_by(scac) %>% 
+  filter(n() > 100) %>% 
+  ggplot(aes(x = miles, y = log(rate))) +
+  geom_point()+
+  geom_smooth(method="lm", se=FALSE)
 #calculates average cost per mile for LTL
 LTL_avg_ppm <- LTL_carriers_ppm %>% 
   summarize(avg_ppm = mean(LTL_price_per_mile))
@@ -558,8 +615,12 @@ good_tl_carriers <- merged_df %>%
     quality = ((complete_rate + undamaged_rate + billed_accurate_rate) /3)
   ) %>% 
   arrange(desc(quality), avg_rate) %>% 
+<<<<<<< HEAD
   filter(shipments > 25) 
   #%>% 
+=======
+  filter(shipments > 25) #%>% 
+>>>>>>> 6055947fd5b3bf09b533e81900844427ba6fba4a
   #arrange(desc(complete_rate), desc(undamaged_rate), desc(billed_accurate_rate)) %>% 
   #print(n=50)
 
@@ -587,8 +648,12 @@ good_ltl_carriers <- merged_df %>%
     quality = ((complete_rate + undamaged_rate + billed_accurate_rate) /3)
   ) %>% 
   arrange(desc(quality), avg_rate) %>% 
+<<<<<<< HEAD
   filter(shipments > 25) 
   #%>% 
+=======
+  filter(shipments > 25) #%>% 
+>>>>>>> 6055947fd5b3bf09b533e81900844427ba6fba4a
   #arrange(desc(complete_rate), desc(undamaged_rate), desc(billed_accurate_rate)) %>% 
   #print(n=50)
 
@@ -630,9 +695,80 @@ merged_df <- merged_df %>%
   left_join(origin_coordinates, by = 'origin_zip') %>%
   left_join(dest_coordinates, by = 'dest_zip_clean')
 
+
+# Join shortest_pairs with latitude and longitude coordinates
+
+
+origin_coordinates <- zip_code_db %>%
+  select(zipcode, lat, lng) %>%
+  rename(origin_zip = zipcode, lat = lat, lng = lng)
+
+dest_coordinates <- zip_code_db %>%
+  select(zipcode, lat, lng) %>%
+  rename(dest_zip_clean = zipcode, dest_lat = lat, dest_long = lng)
+
+# Merge latitude and longitude information
+shortest_pairs <- shortest_pairs %>%
+  left_join(origin_coordinates, by = "origin_zip") %>%
+  left_join(dest_coordinates, by = "dest_zip_clean")
+
+shortest_pairs <- shortest_pairs %>%
+  mutate(origin_lat = ifelse(is.na(lat.x), lat.y, lat.x),
+         origin_long = ifelse(is.na(lng.x), lng.y, lng.x),
+         dest_lat = ifelse(is.na(dest_lat.x), dest_lat.y, dest_lat.x),
+         dest_long = ifelse(is.na(dest_lon), dest_long, dest_lon))
+
+
+# Select only the required columns
+shortest_pairs_final <- shortest_pairs %>%
+  select(origin_zip, dest_zip_clean, distance, origin_lat, origin_long, dest_lat, dest_long)
+
+
+
+
+shortest_pairs_final <- shortest_pairs_final %>% 
+  rename(optimized_origin_zip = origin_zip, 
+         optimized_origin_lat = origin_lat, 
+         optimized_origin_long = origin_long)
+
+# Now join this data with merged_df based on dest_zip_clean
+merged_df <- merged_df %>%
+  left_join(shortest_pairs_final %>% 
+              select(dest_zip_clean, optimized_origin_zip, optimized_origin_lat, optimized_origin_long),
+            by = 'dest_zip_clean')
+
+count_of_optimized_shipments <- merged_df %>% group_by(optimized_origin_zip, dest_zip_clean) %>% 
+  summarize(num_shipments = n())
+
+total_milage_optimized <- count_of_optimized_shipments %>% left_join((shortest_pairs_final %>% select(-c(optimized_origin_lat:dest_long))), by= c('optimized_origin_zip', "dest_zip_clean")) %>% 
+  mutate(distance = if_else(distance == 0, 10, distance)) %>% 
+  mutate(total_milage = num_shipments * distance)
+
+mean_rate <- merged_df %>% 
+  filter(carrier_type == "TL") %>% 
+  summarize(mean_rate = mean(freight_paid/miles)) %>% 
+  pull(mean_rate)
+
+total_milage_optimized %>% 
+  mutate(total_cost = total_milage * mean_rate) %>% 
+  ungroup() %>% 
+  summarize(
+    gross_cost = sum(total_cost)
+  )
+merged_df %>% 
+  ungroup() %>% 
+  summarize(gross_cost = sum(freight_paid))
+
+
+# Fill missing destination lat/long
+
+
+
+
+
 # Your existing analysis code goes here...
 
 # Export the dataframe with the new latitude and longitude columns
 
-write_csv(merged_df, "blue_star_merged.csv")
+write_csv(merged_df, "optimized_routing.csv")
 
