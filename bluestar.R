@@ -707,12 +707,12 @@ best_air_carriers_plot <- good_air_carriers %>%
 
 best_air_carriers_plot
 
-# EUSA is going to be the preferred choice for cost value for AIR carrier type
 
+# Best TL Carriers: MER1, CRSE, WSKT, HJBT, FTPC
 
+# Best LTL Carriers: SMTL, YFSY, WWAT, RETL, PITD
 
-
-
+# Beat AIR Carrier: EUSA
 
 
 # added by Derek
