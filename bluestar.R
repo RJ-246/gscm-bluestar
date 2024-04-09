@@ -614,24 +614,24 @@ merged_df %>%
 
 
 #investigating best carriers
-good_tl_carriers <- merged_df %>% 
-  filter(carrier_type == "TL") %>% 
-  group_by(scac, carrier_type) %>% 
+good_tl_carriers <- merged_df %>%
+  filter(carrier_type == "TL") %>%
+  group_by(scac, carrier_type) %>%
   summarize(
     shipments = n(),
+    on_time_rate = mean(on_time),
     complete_rate = mean(delivered_complete),
     undamaged_rate = mean(damage_free),
     billed_accurate_rate = mean(billed_accurately),
     avg_rate = (mean(freight_paid)/ mean(miles)),
-    quality = ((complete_rate + undamaged_rate + billed_accurate_rate) /3)
-  ) %>% 
-  arrange(desc(quality), avg_rate) %>% 
-  filter(shipments > 25) 
-  #%>% 
-  #arrange(desc(complete_rate), desc(undamaged_rate), desc(billed_accurate_rate)) %>% 
-  #print(n=50)
+    quality = ((on_time_rate + complete_rate + undamaged_rate + billed_accurate_rate) /4)
+  ) %>%
+  arrange(desc(quality), avg_rate) #%>%
+#ilter(shipments > 25) %>%
+#arrange(desc(complete_rate), desc(undamaged_rate), desc(billed_accurate_rate)) %>%
+#print(n=50)
 
-best_tl_carriers_plot <- good_tl_carriers %>% 
+best_tl_carriers_plot <- good_tl_carriers %>%
   ggplot(mapping = aes(x = avg_rate, y = quality))+
   geom_point(mapping = aes(color = scac))+
   geom_smooth(method = 'lm', se = FALSE)+
@@ -642,25 +642,26 @@ best_tl_carriers_plot <- good_tl_carriers %>%
     y = "Average Quality"
   )
 
+best_tl_carriers_plot
 
-good_ltl_carriers <- merged_df %>% 
-  filter(carrier_type == "LTL") %>% 
-  group_by(scac, carrier_type) %>% 
+good_ltl_carriers <- merged_df %>%
+  filter(carrier_type == "LTL") %>%
+  group_by(scac, carrier_type) %>%
   summarize(
     shipments = n(),
+    on_time_rate = mean(on_time),
     complete_rate = mean(delivered_complete),
     undamaged_rate = mean(damage_free),
     billed_accurate_rate = mean(billed_accurately),
     avg_rate = (mean(freight_paid)/ mean(miles) / mean(weight/100)),
-    quality = ((complete_rate + undamaged_rate + billed_accurate_rate) /3)
-  ) %>% 
-  arrange(desc(quality), avg_rate) %>% 
-  filter(shipments > 25) 
-  #%>% 
-  #arrange(desc(complete_rate), desc(undamaged_rate), desc(billed_accurate_rate)) %>% 
-  #print(n=50)
+    quality = ((on_time_rate + complete_rate + undamaged_rate + billed_accurate_rate) /4)
+  ) %>%
+  arrange(desc(quality), avg_rate) #%>%
+#filter(shipments > 25) %>%
+#arrange(desc(complete_rate), desc(undamaged_rate), desc(billed_accurate_rate)) %>%
+#print(n=50)
 
-best_ltl_carriers_plot <- good_ltl_carriers %>% 
+best_ltl_carriers_plot <- good_ltl_carriers %>%
   ggplot(mapping = aes(x = avg_rate, y = quality))+
   geom_point(mapping = aes(color = scac))+
   geom_smooth(method='lm', se = FALSE)+
@@ -670,6 +671,49 @@ best_ltl_carriers_plot <- good_ltl_carriers %>%
     x = "Average Rate",
     y = "Average Quality"
   )
+
+best_ltl_carriers_plot
+
+
+
+good_air_carriers <- merged_df %>%
+  filter(carrier_type == "AIR") %>%
+  group_by(scac, carrier_type) %>%
+  summarize(
+    shipments = n(),
+    on_time_rate = mean(on_time),
+    complete_rate = mean(delivered_complete),
+    undamaged_rate = mean(damage_free),
+    billed_accurate_rate = mean(billed_accurately),
+    avg_rate = (mean(freight_paid)/ mean(miles) / mean(weight/100)),
+    quality = ((on_time_rate + complete_rate + undamaged_rate + billed_accurate_rate) /4)
+  ) %>%
+  arrange(desc(quality), avg_rate) #%>%
+#filter(shipments > 25) %>%
+#arrange(desc(complete_rate), desc(undamaged_rate), desc(billed_accurate_rate)) %>%
+#print(n=50)
+
+
+best_air_carriers_plot <- good_air_carriers %>%
+  ggplot(mapping = aes(x = avg_rate, y = quality))+
+  geom_point(mapping = aes(color = scac))+
+  geom_smooth(method='lm', se = FALSE)+
+  labs(
+    title= "Relationship of Average Quality and Average Rate for AIR Carriers",
+    color = "Carrier",
+    x = "Average Rate",
+    y = "Average Quality"
+  )
+
+best_air_carriers_plot
+
+# EUSA is going to be the preferred choice for cost value for AIR carrier type
+
+
+
+
+
+
 
 # added by Derek
 
