@@ -642,12 +642,8 @@ good_ltl_carriers <- merged_df %>%
     quality = ((complete_rate + undamaged_rate + billed_accurate_rate) /3)
   ) %>% 
   arrange(desc(quality), avg_rate) %>% 
-<<<<<<< HEAD
   filter(shipments > 25) 
   #%>% 
-=======
-  filter(shipments > 25) #%>% 
->>>>>>> 6055947fd5b3bf09b533e81900844427ba6fba4a
   #arrange(desc(complete_rate), desc(undamaged_rate), desc(billed_accurate_rate)) %>% 
   #print(n=50)
 
