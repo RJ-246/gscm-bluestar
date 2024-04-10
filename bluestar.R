@@ -34,7 +34,7 @@ avg_LTL_metrics <- merged_df %>% group_by(carrier_type) %>%
             On_Time_Delivery_Rate = mean(on_time),
             Freight_Damage_Rate = mean(damage_free),
             Billing_Accuracy_Rate = mean(billed_accurately),
-            LTL_price_per_mile = mean((freight_paid / miles) / (weight /100))
+            LTL_price_per_mile = mean(freight_paid / miles / (weight / 100))
             )
 
 avg_TL_metrics <- merged_df %>% group_by(carrier_type) %>% 
@@ -50,7 +50,7 @@ glimpse(avg_TL_metrics)
 
 merged_df <- merged_df %>% 
   mutate(rate = if_else(carrier_type == 'LTL', 
-                        (freight_paid / miles) / (weight /100), 
+                        (freight_paid / miles / (weight / 100)), 
                         freight_paid/miles))
 
 
@@ -94,18 +94,22 @@ filtered_df <- summarized_df %>%
   mutate(
     trucks = ceiling(weight_sum/45000),
     left_over = weight_sum - ((trucks-1)*45000),
-    reduced_price = (if_else(
+    #left_over = if_else(left_over <= 450, 0, left_over)
+    reduced_price = if_else(left_over
+      (if_else(
       carrier_type == 'LTL',
-      (mean_miles * mean_rate) / (45000 / 100),
+      (mean_rate * mean_miles * (45000 / 100)),
       mean_miles * mean_rate
     ) * (trucks-1)) +
   if_else(
     carrier_type == 'LTL',
-    (mean_miles * mean_rate) / (left_over / 100),
+    (mean_miles * mean_rate * (left_over / 100)),
     mean_miles * mean_rate
   )
-  )
-filtered_df
+  ))
+filtered_df %>% select(reduced_price, origin_city, dest_city, dest_state, ship_date, carrier_type) %>% 
+  arrange(ship_date, origin_city)
+
 sum(merged_df$freight_paid) 
 trucks_only_df <- merged_df %>% filter(carrier_type %in% c("TL","LTL"))
 sum(trucks_only_df$freight_paid) 
