@@ -358,9 +358,9 @@ shortest_pairs <- ori_dest_pairs %>%
 #write_delim(geocoded_zips, file= "/Users/rjackso3/Documents/School_Stuff/Winter_2024/GSCM_530/gscm-bluestar/geocoded_zips.csv", delim = ",")
 
 
-geocoded_zips <- read_csv("/Users/rjackso3/Documents/School_Stuff/Winter_2024/GSCM_530/gscm-bluestar/geocoded_zips.csv")
-geocoded_zips <- read_csv("/Users/dalla/Documents/Assorted BYU School stuff/Winter 2024/IS 555/gscm-bluestar/geocoded_zips.csv")
-geocoded_zips <- read_csv("C:/Users/derek/OneDrive/Desktop/School/MISM 2/GSCM/gscm-bluestar/geocoded_zips.csv")
+#geocoded_zips <- read_csv("/Users/rjackso3/Documents/School_Stuff/Winter_2024/GSCM_530/gscm-bluestar/geocoded_zips.csv")
+#geocoded_zips <- read_csv("/Users/dalla/Documents/Assorted BYU School stuff/Winter 2024/IS 555/gscm-bluestar/geocoded_zips.csv")
+#geocoded_zips <- read_csv("C:/Users/derek/OneDrive/Desktop/School/MISM 2/GSCM/gscm-bluestar/geocoded_zips.csv")
 
 
 #takes zip codes back out of geocoded
@@ -718,11 +718,47 @@ best_air_carriers_plot
 
 # Cost estimate code
 
-# TL estimate:
+# Get miles by type
 
-# LTL estimate:
+# Assuming merged_df is your data frame
+total_miles_by_carrier_type <- merged_df %>%
+  group_by(carrier_type) %>%
+  summarise(total_miles = sum(miles, na.rm = TRUE))
 
-# Air estimate: 0.079420865 now vs. 0.03124791, means 0.048172955 saved per rate
+# View the results
+print(total_miles_by_carrier_type)
+
+
+
+
+# Conclusions
+
+# TL estimate:  Rate of 5.2370 now vs. 3.6869 after limiting companies, means 1.5501 saved on all orders, resulting in a cost reduction of 29.60%
+
+# LTL estimate: Rate of 0.0594 now vs. 0.0207 after limiting companies, means 0.0387 saved on all orders, resulting in a cost reduction of 65.15%
+
+# AIR estimate: Rate of 0.079420865 now vs. 0.03124791 after limiting companies, means 0.048172955 saved on all orders, resulting in a cost reduction of 60.66%
+
+# TL
+(5137450 * 5.2370)
+(5137450 * 3.6869)
+(26904826 - 18941264)
+
+# Using preferred companies, TL Savings of $7963562
+
+# LTL
+(13758684 * 0.0594)
+(13758684 * 0.0207)
+(817265.8 - 284804.8)
+
+# Using preferred companies, LTL Savings of $532461
+
+# AIR
+(797188 * 0.079420865)
+(797188 * 0.03124791)
+(63313.36 - 24910.46)
+
+# Using preferred companies, LTL Savings of $38402.9
 
 
 
