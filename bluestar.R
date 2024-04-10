@@ -938,12 +938,16 @@ merged_df_lat_lon <- merged_df %>%
   left_join(shortest_pairs_final %>% 
               select(dest_zip_clean, optimized_origin_zip, optimized_origin_lat, optimized_origin_long),
             by = 'dest_zip_clean')
+
 merged_df_optimized_miles <- merged_df_lat_lon %>% 
   left_join((shortest_pairs %>% select(c("origin_zip", "dest_zip_clean", "distance"))), by = join_by(optimized_origin_zip == origin_zip, dest_zip_clean)) %>% 
   rename(optimized_miles = distance)
+
 merged_df_lat_lon %>% glimpse()
+
 count_of_optimized_shipments <- merged_df_lat_lon %>% group_by(optimized_origin_zip, dest_zip_clean) %>% 
   summarize(num_shipments = n()) %>% arrange(desc(num_shipments))
+
 merged_df %>% 
   group_by(dest_zip_clean) %>% 
   summarize(count = n()) %>% 
@@ -952,7 +956,10 @@ merged_df %>%
 total_milage_optimized <- count_of_optimized_shipments %>% left_join((shortest_pairs_final %>% select(-c(optimized_origin_lat:dest_long))), by= c('optimized_origin_zip', "dest_zip_clean")) %>% 
   mutate(distance = if_else(distance == 0, 10, distance)) %>% 
   mutate(total_milage = num_shipments * distance)
-
+################
+################
+################
+################
 mean_rate <- merged_df %>% 
   filter(carrier_type == "TL") %>% 
   summarize(mean_rate = mean(freight_paid/miles)) %>% 
