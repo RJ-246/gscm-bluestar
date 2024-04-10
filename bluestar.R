@@ -95,16 +95,13 @@ summarized_df <- merged_df %>%
 filtered_df <- summarized_df %>%
   mutate(
     trucks = ceiling(weight_sum/45000),
-<<<<<<< HEAD
     left_over = weight_sum %% 45000,
     left_over = if_else(left_over <= 887, 0, left_over),
     trucks = if_else(left_over == 0, trucks - 1, trucks),
     reduced_price = 
       (if_else(
-=======
     left_over = weight_sum - ((trucks-1)*45000),
     reduced_price = (if_else(
->>>>>>> 6513f37791a42d4b1268d78316e19c5eb71c3d42
       carrier_type == 'LTL',
       (mean_miles * mean_rate) / (45000 / 100),
       mean_miles * mean_rate
@@ -113,8 +110,7 @@ filtered_df <- summarized_df %>%
     carrier_type == 'LTL',
     (mean_miles * mean_rate) / (left_over / 100),
     mean_miles * mean_rate
-<<<<<<< HEAD
-  ))
+  ))))
 
 
 
