@@ -53,6 +53,9 @@ merged_df <- merged_df %>%
                         (freight_paid / miles / (weight / 100)), 
                         freight_paid/miles))
 
+merged_df$id <- seq_len(nrow(merged_df))
+
+trucks_only_df <- merged_df %>% filter(carrier_type %in% c("TL","LTL"))
 
 plot_2 <- merged_df %>% 
   filter(carrier_type %in% c("TL")) %>% 
@@ -89,13 +92,13 @@ summarized_df <- merged_df %>%
             mean_miles = mean(miles))
 
 
-
 filtered_df <- summarized_df %>%
   mutate(
     trucks = ceiling(weight_sum/45000),
-    left_over = weight_sum - ((trucks-1)*45000),
-    #left_over = if_else(left_over <= 450, 0, left_over)
-    reduced_price = if_else(left_over
+    left_over = weight_sum %% 45000,
+    left_over = if_else(left_over <= 887, 0, left_over),
+    trucks = if_else(left_over == 0, trucks - 1, trucks),
+    reduced_price = 
       (if_else(
       carrier_type == 'LTL',
       (mean_rate * mean_miles * (45000 / 100)),
@@ -105,17 +108,81 @@ filtered_df <- summarized_df %>%
     carrier_type == 'LTL',
     (mean_miles * mean_rate * (left_over / 100)),
     mean_miles * mean_rate
-  )
   ))
-filtered_df %>% select(reduced_price, origin_city, dest_city, dest_state, ship_date, carrier_type) %>% 
-  arrange(ship_date, origin_city)
 
-sum(merged_df$freight_paid) 
-trucks_only_df <- merged_df %>% filter(carrier_type %in% c("TL","LTL"))
-sum(trucks_only_df$freight_paid) 
+
+
+# Modify the summarized_df to include ship_date in grouping
+summarized_df <- merged_df %>%
+  filter(carrier_type %in% c("TL", "LTL")) %>%
+  group_by(origin_city, dest_city, dest_state, ship_date, carrier_type) %>%
+  summarize(weight_sum = sum(weight),
+            mean_rate = mean(rate),
+            mean_miles = mean(miles))
+
+filtered_df <- summarized_df %>%
+  arrange(ship_date) %>%
+  mutate(trucks = ceiling(weight_sum / 45000),
+         left_over = weight_sum %% 45000)
+
+filtered_df$id <- seq_len(nrow(filtered_df))
+
+
+for (i in 1:(nrow(filtered_df))) {
+  if (filtered_df$left_over[i] > 0) {
+    later_shipments <- filtered_df %>%
+      filter(origin_city == filtered_df$origin_city[i] &
+               dest_city == filtered_df$dest_city[i] &
+               dest_state == filtered_df$dest_state[i] &
+               carrier_type == filtered_df$carrier_type[i] &
+               ship_date > filtered_df$ship_date[i])
+    total_left_over <- filtered_df$left_over[i]
+    
+    for (j in 1:nrow(later_shipments)) {
+      if(total_left_over + later_shipments$left_over[j] > 1000) {
+        filtered_df$left_over[i] = 0
+        later_shipments$left_over[j] = total_left_over + later_shipments$left_over[j]
+        filtered_df$left_over[later_shipments$id[j]] = later_shipments$left_over[j]
+        total_left_over = 0
+        print(total_left_over)
+        break
+      }
+      total_left_over <- total_left_over + later_shipments$left_over[j]
+      later_shipments$left_over[j] = 0
+      filtered_df$left_over[later_shipments$id[j]] = 0
+      last_id <- later_shipments$id[j]
+    }
+    
+    if (total_left_over > 0) {
+      extra_shipment <- filtered_df[i]  
+      extra_shipment$id <- max(filtered_df$id) + 1  
+      extra_shipment$weight <- total_left_over
+      extra_shipment$ship_date <- filtered_df$ship_date[last_id]+1
+      filtered_df <- rbind(filtered_df, extra_shipment)
+    }
+  }
+}
+
+# Calculate the reduced price based on the adjusted trucks and leftover weight
+filtered_df <- filtered_df %>%
+  mutate(
+    reduced_price = (if_else(carrier_type == 'LTL',
+                             (mean_rate * mean_miles * (45000 / 100)),
+                             mean_miles * mean_rate) * (trucks - 1)) +
+      (if_else(carrier_type == 'LTL',
+               (mean_miles * mean_rate * (left_over / 100)),
+               mean_miles * mean_rate))
+  )
+
+
+sum(trucks_only_df$freight_paid)
 
 sum(filtered_df$reduced_price)
 
+
+
+filtered_df %>% select(reduced_price, origin_city, dest_city, dest_state, ship_date, carrier_type) %>% 
+  arrange(ship_date, origin_city)
 
 # Gavin
 
