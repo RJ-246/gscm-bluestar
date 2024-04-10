@@ -437,7 +437,7 @@ shortest_pairs <- ori_dest_pairs %>%
 #write_delim(geocoded_zips, file= "/Users/rjackso3/Documents/School_Stuff/Winter_2024/GSCM_530/gscm-bluestar/geocoded_zips.csv", delim = ",")
 
 
-#geocoded_zips <- read_csv("/Users/rjackso3/Documents/School_Stuff/Winter_2024/GSCM_530/gscm-bluestar/geocoded_zips.csv")
+geocoded_zips <- read_csv("/Users/rjackso3/Documents/School_Stuff/Winter_2024/GSCM_530/gscm-bluestar/geocoded_zips.csv")
 #geocoded_zips <- read_csv("/Users/dalla/Documents/Assorted BYU School stuff/Winter 2024/IS 555/gscm-bluestar/geocoded_zips.csv")
 #geocoded_zips <- read_csv("C:/Users/derek/OneDrive/Desktop/School/MISM 2/GSCM/gscm-bluestar/geocoded_zips.csv")
 
@@ -796,9 +796,9 @@ best_air_carriers_plot
 
 # Given rate, quality, and a proven number of shipments, these companies are preferred for each carrier_type:
 
-# Best TL Carriers: MER1, CRSE, WSKT, HJBT, FTPC
+# Best TL Carriers: MER1, WSKT, FTPC, FAKF
 
-# Best LTL Carriers: SMTL, YFSY, WWAT, RETL, PITD
+# Best LTL Carriers: SMTL, YFSY, WWAT
 
 # Best AIR Carrier: EUSA
 
@@ -828,7 +828,7 @@ print(mean_rate_by_carrier_type)
 # Preferred TL companies mean rate
 
 # List of specific SCACs
-specific_scacs <- c("MER1", "WSKT", "FTPC", "FAKF")#"HJBT","CRSE")
+specific_scacs <- c("MER1", "WSKT", "FTPC", "FAKF")#, "HJBT","CRSE")
 
 # Filter merged_df for the specific SCACs and calculate the mean rate
 mean_rate_specific_scacs_TL <- merged_df %>%
