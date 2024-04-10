@@ -896,14 +896,14 @@ merged_df %>%
 
 # TL
 
-# By using the lower rate of $6.43 for TL shipments calculated from the mean rate of the preferred providers, the total cost was 
-# $19,702,587.59, approximately $1,225,666.41 would have been saved compared to the total freight cost of $20,928,254 incurred at 
+# By using the lower rate of $4.28 for TL shipments calculated from the mean rate of the preferred providers, the total cost was 
+# $13,114,630.62, approximately $7,813,623.38 would have been saved compared to the total freight cost of $20,928,254 incurred at 
 # the mean rate of $6.83.
 
 # LTL
 
-# By applying the new rate of $0.211, the total freight charges would have been approximately $29,245,982.40 instead of the $75,124,751 
-# paid at the mean rate of $0.542. This means we would have saved approximately $45,878,768.60 if the new rate had been applied to the 
+# By applying the new rate of $0.111, the total freight charges would have been approximately $15,385,327.24 instead of the $75,124,751 
+# paid at the mean rate of $0.542. This means we would have saved approximately $59,739,423.76 if the new rate had been applied to the 
 # previous charges.
 
 # AIR
@@ -913,9 +913,9 @@ merged_df %>%
 # cost of $4,888,289.
 
 
-(1225666.41 + 45878768.60 + 3430939.29)
+(7813623.38 + 59739423.76 + 3430939.29)
 
-# Total savings by prioritizing better companies is $50,535,374
+# Total savings by prioritizing better companies is $70,983,986.43
 
 
 # added by Derek
