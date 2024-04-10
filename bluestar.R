@@ -823,6 +823,9 @@ print(total_freight_by_carrier_type)
 # cost of $4,888,289.
 
 
+(1225666.41 + 45878768.60 + 3430939.29)
+
+# Total savings by prioritizing better companies is $50,535,374
 
 
 # added by Derek
