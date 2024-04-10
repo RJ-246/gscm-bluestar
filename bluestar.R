@@ -161,6 +161,7 @@ for (i in 1:(nrow(filtered_df))) {
       filtered_df <- rbind(filtered_df, extra_shipment)
     }
   }
+  print(1)
 }
 
 # Calculate the reduced price based on the adjusted trucks and leftover weight
