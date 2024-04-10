@@ -11,6 +11,9 @@ df_shipments <- read_csv('https://www.dropbox.com/scl/fi/kycaltu2y4e4k2jno8gmu/B
 
 df_carriers <- read_csv('https://www.dropbox.com/scl/fi/zly5n0tuzpmceczh9dpct/Blue-Star-2019-1-Carriers.csv?rlkey=nz5h6wg2y5fthyy0juw1o36xo&dl=1')
 
+df_carriers %>% filter(weight <= 1)
+
+
 merged_df <- left_join(df_shipments, df_carriers, by = "SCAC") %>% 
   janitor::clean_names() %>% 
   mutate(ship_date = mdy(ship_date)) %>% 
@@ -88,18 +91,18 @@ top_dest_org_pair <- merged_df %>% group_by(carrier_type, origin_city, dest_city
   summarize(dest_org_pair_count = n()) %>% 
   arrange(desc(dest_org_pair_count))
 
+merged_df_optimized_miles
 
-
-summarized_df <- merged_df %>%
+summarized_df <- merged_df_optimized_miles %>%
   filter(carrier_type %in% c("TL","LTL")) %>% 
   group_by(origin_city, dest_city, dest_state, ship_date) %>%
   summarize(weight_sum = sum(weight),
-            mean_rate = mean(rate),
-            mean_miles = mean(miles))
+            mean_miles = mean(optimized_miles)*1.25)
 
 
 mean_rate_specific_scacs_LTL$mean_rate
 mean_rate_specific_scacs_TL$mean_rate
+
 
 filtered_df <- summarized_df %>%
   mutate(
@@ -107,12 +110,29 @@ filtered_df <- summarized_df %>%
     left_over = weight_sum %% 45000,
     reduced_price = 
       (mean_miles * mean_rate_specific_scacs_TL$mean_rate) * (trucks-1) +
-      (mean_miles * mean_rate_specific_scacs_LTL$mean_rate) / (left_over / 100))
+      if_else(left_over < 3900,
+              (mean_miles * mean_rate_specific_scacs_LTL$mean_rate) * (left_over / 100),
+              (mean_miles * mean_rate_specific_scacs_TL$mean_rate)))
 
 trucks_only_df <- merged_df %>% filter(carrier_type %in% c("TL","LTL"))
+
 sum(trucks_only_df$freight_paid)
 sum(filtered_df$reduced_price)
 
+mean_rate_specific_scacs_AIR
+
+air_df <- merged_df_optimized_miles %>% filter(carrier_type == 'AIR') %>% 
+  mutate(reduced_price = optimized_miles * pull(mean_rate_specific_scacs_AIR))
+
+air_savings <- sum(air_df$freight_paid) - sum(air_df$reduced_price)
+
+Total_savings <- sum(trucks_only_df$freight_paid) - sum(filtered_df$reduced_price) + air_savings
+
+sum(merged_df$freight_paid) * 3
+
+Total_savings
+
+Total_savings * 3
 
 # Gavin
 
@@ -359,8 +379,8 @@ shortest_pairs <- ori_dest_pairs %>%
 #write_delim(geocoded_zips, file= "/Users/rjackso3/Documents/School_Stuff/Winter_2024/GSCM_530/gscm-bluestar/geocoded_zips.csv", delim = ",")
 
 
-geocoded_zips <- read_csv("/Users/rjackso3/Documents/School_Stuff/Winter_2024/GSCM_530/gscm-bluestar/geocoded_zips.csv")
-#geocoded_zips <- read_csv("/Users/dalla/Documents/Assorted BYU School stuff/Winter 2024/IS 555/gscm-bluestar/geocoded_zips.csv")
+#geocoded_zips <- read_csv("/Users/rjackso3/Documents/School_Stuff/Winter_2024/GSCM_530/gscm-bluestar/geocoded_zips.csv")
+geocoded_zips <- read_csv("/Users/dalla/Documents/Assorted BYU School stuff/Winter 2024/IS 555/gscm-bluestar/geocoded_zips.csv")
 #geocoded_zips <- read_csv("C:/Users/derek/OneDrive/Desktop/School/MISM 2/GSCM/gscm-bluestar/geocoded_zips.csv")
 
 
