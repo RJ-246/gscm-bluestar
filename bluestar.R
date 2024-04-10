@@ -50,7 +50,7 @@ glimpse(avg_TL_metrics)
 
 merged_df <- merged_df %>% 
   mutate(rate = if_else(carrier_type == 'LTL', 
-                        (freight_paid / miles) / (weight /100), 
+                        (freight_paid / miles / (weight /100)), 
                         freight_paid/miles))
 
 merged_df$id <- seq_len(nrow(merged_df))
@@ -704,13 +704,14 @@ good_tl_carriers <- merged_df %>%
     complete_rate = mean(delivered_complete),
     undamaged_rate = mean(damage_free),
     billed_accurate_rate = mean(billed_accurately),
-    avg_rate = (mean(freight_paid)/ mean(miles)),
+    avg_rate = mean(rate), #(mean(freight_paid)/ mean(miles))
     quality = ((on_time_rate + complete_rate + undamaged_rate + billed_accurate_rate) /4)
   ) %>%
-  arrange(desc(quality), avg_rate) #%>%
-#ilter(shipments > 25) %>%
+  arrange(desc(quality), avg_rate) %>%
+  filter(shipments > 25)
 #arrange(desc(complete_rate), desc(undamaged_rate), desc(billed_accurate_rate)) %>%
 #print(n=50)
+good_tl_carriers %>% arrange(desc(shipments))
 
 # Plotting TL Carriers
 best_tl_carriers_plot <- good_tl_carriers %>%
@@ -736,13 +737,14 @@ good_ltl_carriers <- merged_df %>%
     complete_rate = mean(delivered_complete),
     undamaged_rate = mean(damage_free),
     billed_accurate_rate = mean(billed_accurately),
-    avg_rate = (mean(freight_paid)/ mean(miles) / mean(weight/100)),
+    avg_rate =mean(rate),#(mean(freight_paid)/ mean(miles) / mean(weight/100)),
     quality = ((on_time_rate + complete_rate + undamaged_rate + billed_accurate_rate) /4)
   ) %>%
-  arrange(desc(quality), avg_rate) #%>%
-#filter(shipments > 25) %>%
+  arrange(desc(quality), avg_rate) %>%
+  filter(shipments > 25)
 #arrange(desc(complete_rate), desc(undamaged_rate), desc(billed_accurate_rate)) %>%
 #print(n=50)
+good_ltl_carriers %>% arrange(desc(shipments))
 
 # Plotting LTL carriers
 best_ltl_carriers_plot <- good_ltl_carriers %>%
@@ -768,13 +770,14 @@ good_air_carriers <- merged_df %>%
     complete_rate = mean(delivered_complete),
     undamaged_rate = mean(damage_free),
     billed_accurate_rate = mean(billed_accurately),
-    avg_rate = (mean(freight_paid)/ mean(miles) / mean(weight/100)),
+    avg_rate = mean(rate),#(mean(freight_paid)/ mean(miles) / mean(weight/100)),
     quality = ((on_time_rate + complete_rate + undamaged_rate + billed_accurate_rate) /4)
   ) %>%
-  arrange(desc(quality), avg_rate) #%>%
+  arrange(desc(quality), avg_rate)
 #filter(shipments > 25) %>%
 #arrange(desc(complete_rate), desc(undamaged_rate), desc(billed_accurate_rate)) %>%
 #print(n=50)
+
 
 # Plotting air carriers
 best_air_carriers_plot <- good_air_carriers %>%
@@ -825,30 +828,31 @@ print(mean_rate_by_carrier_type)
 # Preferred TL companies mean rate
 
 # List of specific SCACs
-specific_scacs <- c("MER1", "CRSE", "WSKT", "HJBT", "FTPC")
+specific_scacs <- c("MER1", "WSKT", "FTPC", "FAKF")#"HJBT","CRSE")
 
 # Filter merged_df for the specific SCACs and calculate the mean rate
-mean_rate_specific_scacs <- merged_df %>%
+mean_rate_specific_scacs_TL <- merged_df %>%
   filter(scac %in% specific_scacs) %>%
   summarise(mean_rate = mean(rate, na.rm = TRUE))
 
 # View the result
-print(mean_rate_specific_scacs)
+print(mean_rate_specific_scacs_TL)
 
 
 # Preferred LTL companies mean rate
 library(dplyr)
 
 # List of specific SCACs
-specific_scacs <- c("SMTL", "YFSY", "WWAT", "RETL", "PITD")
+specific_scacs <- c("SMTL", "WWAT", "YFSY")#, "RETL", "PITD")
 
 # Filter merged_df for the specific SCACs and calculate the mean rate
-mean_rate_specific_scacs <- merged_df %>%
+mean_rate_specific_scacs_LTL <- merged_df %>%
+  #group_by(scac) %>% 
   filter(scac %in% specific_scacs) %>%
   summarise(mean_rate = mean(rate, na.rm = TRUE))
 
 # View the result
-print(mean_rate_specific_scacs)
+print(mean_rate_specific_scacs_LTL)
 
 
 # Preferred AIR companies mean rate
@@ -859,13 +863,12 @@ library(dplyr)
 specific_scacs <- c("EUSA")
 
 # Filter merged_df for the specific SCACs and calculate the mean rate
-mean_rate_specific_scacs <- merged_df %>%
+mean_rate_specific_scacs_AIR <- merged_df %>%
   filter(scac %in% specific_scacs) %>%
   summarise(mean_rate = mean(rate, na.rm = TRUE))
 
 # View the result
-print(mean_rate_specific_scacs)
-
+print(mean_rate_specific_scacs_AIR)
 
 
 
@@ -881,6 +884,14 @@ print(total_freight_by_carrier_type)
 
 
 # Cost Savings statements if we used preferred providers
+merged_df %>% 
+  group_by(carrier_type) %>% 
+  mutate(optimized_rate_freight_paid = if_else(carrier_type == "LTL", miles * (weight/100) * pull(mean_rate_specific_scacs_LTL), if_else(carrier_type == "TL", miles * pull(mean_rate_specific_scacs_TL), miles * pull(mean_rate_specific_scacs_AIR)))) %>% 
+  #select(carrier_type, freight_paid, optimized_rate_freight_paid, miles, weight)
+  mutate(unoptimized_rate_freight_paid = if_else(carrier_type == "LTL", 0.542 * miles * (weight/100), if_else(carrier_type == "TL", miles * 6.83, miles * 10.7))) %>% 
+  summarise(optimized_freight_paid = sum(optimized_rate_freight_paid, na.rm = TRUE),
+            unoptimized_freight_paid = sum(unoptimized_rate_freight_paid),
+            savings = unoptimized_freight_paid - optimized_freight_paid)
 
 
 # TL
