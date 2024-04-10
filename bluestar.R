@@ -34,7 +34,7 @@ avg_LTL_metrics <- merged_df %>% group_by(carrier_type) %>%
             On_Time_Delivery_Rate = mean(on_time),
             Freight_Damage_Rate = mean(damage_free),
             Billing_Accuracy_Rate = mean(billed_accurately),
-            LTL_price_per_mile = mean(freight_paid / miles / (weight / 100))
+            LTL_price_per_mile = mean((freight_paid / miles) / (weight /100))
             )
 
 avg_TL_metrics <- merged_df %>% group_by(carrier_type) %>% 
@@ -50,7 +50,7 @@ glimpse(avg_TL_metrics)
 
 merged_df <- merged_df %>% 
   mutate(rate = if_else(carrier_type == 'LTL', 
-                        (freight_paid / miles / (weight / 100)), 
+                        (freight_paid / miles) / (weight /100), 
                         freight_paid/miles))
 
 merged_df$id <- seq_len(nrow(merged_df))
@@ -95,19 +95,25 @@ summarized_df <- merged_df %>%
 filtered_df <- summarized_df %>%
   mutate(
     trucks = ceiling(weight_sum/45000),
+<<<<<<< HEAD
     left_over = weight_sum %% 45000,
     left_over = if_else(left_over <= 887, 0, left_over),
     trucks = if_else(left_over == 0, trucks - 1, trucks),
     reduced_price = 
       (if_else(
+=======
+    left_over = weight_sum - ((trucks-1)*45000),
+    reduced_price = (if_else(
+>>>>>>> 6513f37791a42d4b1268d78316e19c5eb71c3d42
       carrier_type == 'LTL',
-      (mean_rate * mean_miles * (45000 / 100)),
+      (mean_miles * mean_rate) / (45000 / 100),
       mean_miles * mean_rate
     ) * (trucks-1)) +
   if_else(
     carrier_type == 'LTL',
-    (mean_miles * mean_rate * (left_over / 100)),
+    (mean_miles * mean_rate) / (left_over / 100),
     mean_miles * mean_rate
+<<<<<<< HEAD
   ))
 
 
@@ -177,6 +183,14 @@ filtered_df <- filtered_df %>%
 
 
 sum(trucks_only_df$freight_paid)
+=======
+  )
+  )
+filtered_df
+sum(merged_df$freight_paid) 
+trucks_only_df <- merged_df %>% filter(carrier_type %in% c("TL","LTL"))
+sum(trucks_only_df$freight_paid) 
+>>>>>>> 6513f37791a42d4b1268d78316e19c5eb71c3d42
 
 sum(filtered_df$reduced_price)
 
@@ -685,7 +699,9 @@ merged_df %>%
   arrange(freight_paid)
 
 
-#investigating best carriers
+# Investigating best carriers
+
+# Getting best TL carrier
 good_tl_carriers <- merged_df %>%
   filter(carrier_type == "TL") %>%
   group_by(scac, carrier_type) %>%
@@ -703,6 +719,7 @@ good_tl_carriers <- merged_df %>%
 #arrange(desc(complete_rate), desc(undamaged_rate), desc(billed_accurate_rate)) %>%
 #print(n=50)
 
+# Plotting TL Carriers
 best_tl_carriers_plot <- good_tl_carriers %>%
   ggplot(mapping = aes(x = avg_rate, y = quality))+
   geom_point(mapping = aes(color = scac))+
@@ -716,6 +733,7 @@ best_tl_carriers_plot <- good_tl_carriers %>%
 
 best_tl_carriers_plot
 
+# Getting best LTL carriers
 good_ltl_carriers <- merged_df %>%
   filter(carrier_type == "LTL") %>%
   group_by(scac, carrier_type) %>%
@@ -733,6 +751,7 @@ good_ltl_carriers <- merged_df %>%
 #arrange(desc(complete_rate), desc(undamaged_rate), desc(billed_accurate_rate)) %>%
 #print(n=50)
 
+# Plotting LTL carriers
 best_ltl_carriers_plot <- good_ltl_carriers %>%
   ggplot(mapping = aes(x = avg_rate, y = quality))+
   geom_point(mapping = aes(color = scac))+
@@ -746,8 +765,7 @@ best_ltl_carriers_plot <- good_ltl_carriers %>%
 
 best_ltl_carriers_plot
 
-
-
+# Getting best air carrier
 good_air_carriers <- merged_df %>%
   filter(carrier_type == "AIR") %>%
   group_by(scac, carrier_type) %>%
@@ -765,7 +783,7 @@ good_air_carriers <- merged_df %>%
 #arrange(desc(complete_rate), desc(undamaged_rate), desc(billed_accurate_rate)) %>%
 #print(n=50)
 
-
+# Plotting air carriers
 best_air_carriers_plot <- good_air_carriers %>%
   ggplot(mapping = aes(x = avg_rate, y = quality))+
   geom_point(mapping = aes(color = scac))+
@@ -780,62 +798,120 @@ best_air_carriers_plot <- good_air_carriers %>%
 best_air_carriers_plot
 
 
+# Given rate, quality, and a proven number of shipments, these companies are preferred for each carrier_type:
+
 # Best TL Carriers: MER1, CRSE, WSKT, HJBT, FTPC
 
 # Best LTL Carriers: SMTL, YFSY, WWAT, RETL, PITD
 
-# Beat AIR Carrier: EUSA
+# Best AIR Carrier: EUSA
+
+
+# Confirmation of LTL Carrier choice
+# Calculate the mean weight for LTL shipments and sort by SCAC
+ltl_mean_weight_by_scac <- merged_df %>%
+  filter(carrier_type == "LTL") %>%
+  group_by(scac) %>%
+  summarise(mean_weight = mean(weight, na.rm = TRUE)) %>%
+  arrange(scac)
+
+# View the results
+print(ltl_mean_weight_by_scac)
+
+
+# Mean rate calculation by carrier_type
+mean_rate_by_carrier_type <- merged_df %>%
+  group_by(carrier_type) %>%
+  summarise(mean_rate = mean(rate, na.rm = TRUE))
+
+# View the results
+print(mean_rate_by_carrier_type)
+
+
+
+# Preferred TL companies mean rate
+
+# List of specific SCACs
+specific_scacs <- c("MER1", "CRSE", "WSKT", "HJBT", "FTPC")
+
+# Filter merged_df for the specific SCACs and calculate the mean rate
+mean_rate_specific_scacs <- merged_df %>%
+  filter(scac %in% specific_scacs) %>%
+  summarise(mean_rate = mean(rate, na.rm = TRUE))
+
+# View the result
+print(mean_rate_specific_scacs)
+
+
+# Preferred LTL companies mean rate
+library(dplyr)
+
+# List of specific SCACs
+specific_scacs <- c("SMTL", "YFSY", "WWAT", "RETL", "PITD")
+
+# Filter merged_df for the specific SCACs and calculate the mean rate
+mean_rate_specific_scacs <- merged_df %>%
+  filter(scac %in% specific_scacs) %>%
+  summarise(mean_rate = mean(rate, na.rm = TRUE))
+
+# View the result
+print(mean_rate_specific_scacs)
+
+
+# Preferred AIR companies mean rate
+
+library(dplyr)
+
+# List of specific SCACs
+specific_scacs <- c("EUSA")
+
+# Filter merged_df for the specific SCACs and calculate the mean rate
+mean_rate_specific_scacs <- merged_df %>%
+  filter(scac %in% specific_scacs) %>%
+  summarise(mean_rate = mean(rate, na.rm = TRUE))
+
+# View the result
+print(mean_rate_specific_scacs)
+
 
 
 
 # Cost estimate code
 
-# Get miles by type
-
 # Assuming merged_df is your data frame
-total_miles_by_carrier_type <- merged_df %>%
+total_freight_by_carrier_type <- merged_df %>%
   group_by(carrier_type) %>%
-  summarise(total_miles = sum(miles, na.rm = TRUE))
+  summarise(total_freight = sum(freight_paid, na.rm = TRUE))
 
 # View the results
-print(total_miles_by_carrier_type)
+print(total_freight_by_carrier_type)
 
 
+# Cost Savings statements if we used preferred providers
 
-
-# Conclusions
-
-# TL estimate:  Rate of 5.2370 now vs. 3.6869 after limiting companies, means 1.5501 saved on all orders, resulting in a cost reduction of 29.60%
-
-# LTL estimate: Rate of 0.0594 now vs. 0.0207 after limiting companies, means 0.0387 saved on all orders, resulting in a cost reduction of 65.15%
-
-# AIR estimate: Rate of 0.079420865 now vs. 0.03124791 after limiting companies, means 0.048172955 saved on all orders, resulting in a cost reduction of 60.66%
 
 # TL
-(5137450 * 5.2370)
-(5137450 * 3.6869)
-(26904826 - 18941264)
 
-# Using preferred companies, TL Savings of $7963562
+# By using the lower rate of $6.43 for TL shipments calculated from the mean rate of the preferred providers, the total cost was 
+# $19,702,587.59, approximately $1,225,666.41 would have been saved compared to the total freight cost of $20,928,254 incurred at 
+# the mean rate of $6.83.
 
 # LTL
-(13758684 * 0.0594)
-(13758684 * 0.0207)
-(817265.8 - 284804.8)
 
-# Using preferred companies, LTL Savings of $532461
+# By applying the new rate of $0.211, the total freight charges would have been approximately $29,245,982.40 instead of the $75,124,751 
+# paid at the mean rate of $0.542. This means we would have saved approximately $45,878,768.60 if the new rate had been applied to the 
+# previous charges.
 
 # AIR
-(797188 * 0.079420865)
-(797188 * 0.03124791)
-(63313.36 - 24910.46)
 
-# Using preferred companies, LTL Savings of $38402.9
-
+# By applying the lower rate of $3.19 for AIR shipments, the total freight cost would have been approximately $1,457,349.71. This means 
+# we would have saved about $3,430,939.29 if the new rate of 3.19 had been used instead of the actual mean rate of 10.7 which had a total
+# cost of $4,888,289.
 
 
+(1225666.41 + 45878768.60 + 3430939.29)
 
-
+# Total savings by prioritizing better companies is $50,535,374
 
 
 # added by Derek
