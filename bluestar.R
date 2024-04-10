@@ -361,13 +361,11 @@ shortest_pairs <- ori_dest_pairs %>%
 
 #write_delim(geocoded_zips, file= "/Users/rjackso3/Documents/School_Stuff/Winter_2024/GSCM_530/gscm-bluestar/geocoded_zips.csv", delim = ",")
 
-<<<<<<< HEAD
-geocoded_zips <- read_csv("/Users/rjackso3/Documents/School_Stuff/Winter_2024/GSCM_530/gscm-bluestar/geocoded_zips.csv")
-geocoded_zips <- read_csv("/Users/dalla/Documents/Assorted BYU School stuff/Winter 2024/IS 555/gscm-bluestar/geocoded_zips.csv")
 
-=======
-geocoded_zips <- read_csv("C:/Users/derek/OneDrive/Desktop/School/MISM 2/GSCM/gscm-bluestar/geocoded_zips.csv")
->>>>>>> 6055947fd5b3bf09b533e81900844427ba6fba4a
+#geocoded_zips <- read_csv("/Users/rjackso3/Documents/School_Stuff/Winter_2024/GSCM_530/gscm-bluestar/geocoded_zips.csv")
+#geocoded_zips <- read_csv("/Users/dalla/Documents/Assorted BYU School stuff/Winter 2024/IS 555/gscm-bluestar/geocoded_zips.csv")
+#geocoded_zips <- read_csv("C:/Users/derek/OneDrive/Desktop/School/MISM 2/GSCM/gscm-bluestar/geocoded_zips.csv")
+
 
 #takes zip codes back out of geocoded
 geocoded_dests <- geocoded_zips %>% 
@@ -491,6 +489,8 @@ merged_df %>%
   ggplot(mapping = aes(x = scac, y = std_dev))+
   geom_point()
 
+#carrier proliferations
+
 #Z Scores?
 
 #Variance based on carrier type
@@ -513,9 +513,14 @@ rate_variance_TL <-  merged_df %>%
   group_by(scac) %>% 
   #filter(n() > 100) %>% 
   ggplot(aes(x = miles, y = log(rate))) +
-  geom_point()+
-  geom_smooth(method="lm")
-  #facet_wrap(~scac)
+  geom_point(aes(color = weight))+
+  #geom_smooth(method="lm")+
+  labs(
+    title="Log of Rate and Miles, colored by Weight (TL Shipments)",
+    x = "Miles",
+    y = "Log(Rate)",
+    color = "Weight"
+  )+theme_bw()
 
 
 rate_variance_LTL <- merged_df %>% 
@@ -526,9 +531,9 @@ rate_variance_LTL <- merged_df %>%
   filter(n() > 100) %>% 
   ggplot(aes(x = miles, y = log(rate))) +
   geom_point(aes(color = weight))+
-  geom_smooth(method = "lm")+
+  #geom_smooth(method = "lm")+
   labs(
-    title="Log of Rate and Miles, and Weight",
+    title="Log of Rate and Miles, colored by Weight (LTL Shipments)",
     x = "Miles",
     y = "Log(Rate)",
     color = "Weight"
@@ -541,8 +546,14 @@ rate_variance_AIR <- merged_df %>%
   group_by(scac) %>% 
   filter(n() > 100) %>% 
   ggplot(aes(x = miles, y = log(rate))) +
-  geom_point()+
-  geom_smooth(method="lm", se=FALSE)
+  geom_point(aes(color = weight))+
+  #geom_smooth(method="lm", se=FALSE)
+  labs(
+    title="Log of Rate and Miles, colored by Weight (Air Shipments)",
+    x = "Miles",
+    y = "Log(Rate)",
+    color = "Weight"
+  )+theme_bw()
 #calculates average cost per mile for LTL
 LTL_avg_ppm <- LTL_carriers_ppm %>% 
   summarize(avg_ppm = mean(LTL_price_per_mile))
@@ -607,28 +618,24 @@ merged_df %>%
 
 
 #investigating best carriers
-good_tl_carriers <- merged_df %>% 
-  filter(carrier_type == "TL") %>% 
-  group_by(scac, carrier_type) %>% 
+good_tl_carriers <- merged_df %>%
+  filter(carrier_type == "TL") %>%
+  group_by(scac, carrier_type) %>%
   summarize(
     shipments = n(),
+    on_time_rate = mean(on_time),
     complete_rate = mean(delivered_complete),
     undamaged_rate = mean(damage_free),
     billed_accurate_rate = mean(billed_accurately),
     avg_rate = (mean(freight_paid)/ mean(miles)),
-    quality = ((complete_rate + undamaged_rate + billed_accurate_rate) /3)
-  ) %>% 
-  arrange(desc(quality), avg_rate) %>% 
-<<<<<<< HEAD
-  filter(shipments > 25) 
-  #%>% 
-=======
-  filter(shipments > 25) #%>% 
->>>>>>> 6055947fd5b3bf09b533e81900844427ba6fba4a
-  #arrange(desc(complete_rate), desc(undamaged_rate), desc(billed_accurate_rate)) %>% 
-  #print(n=50)
+    quality = ((on_time_rate + complete_rate + undamaged_rate + billed_accurate_rate) /4)
+  ) %>%
+  arrange(desc(quality), avg_rate) #%>%
+#ilter(shipments > 25) %>%
+#arrange(desc(complete_rate), desc(undamaged_rate), desc(billed_accurate_rate)) %>%
+#print(n=50)
 
-best_tl_carriers_plot <- good_tl_carriers %>% 
+best_tl_carriers_plot <- good_tl_carriers %>%
   ggplot(mapping = aes(x = avg_rate, y = quality))+
   geom_point(mapping = aes(color = scac))+
   geom_smooth(method = 'lm', se = FALSE)+
@@ -639,29 +646,26 @@ best_tl_carriers_plot <- good_tl_carriers %>%
     y = "Average Quality"
   )
 
+best_tl_carriers_plot
 
-good_ltl_carriers <- merged_df %>% 
-  filter(carrier_type == "LTL") %>% 
-  group_by(scac, carrier_type) %>% 
+good_ltl_carriers <- merged_df %>%
+  filter(carrier_type == "LTL") %>%
+  group_by(scac, carrier_type) %>%
   summarize(
     shipments = n(),
+    on_time_rate = mean(on_time),
     complete_rate = mean(delivered_complete),
     undamaged_rate = mean(damage_free),
     billed_accurate_rate = mean(billed_accurately),
     avg_rate = (mean(freight_paid)/ mean(miles) / mean(weight/100)),
-    quality = ((complete_rate + undamaged_rate + billed_accurate_rate) /3)
-  ) %>% 
-  arrange(desc(quality), avg_rate) %>% 
-<<<<<<< HEAD
-  filter(shipments > 25) 
-  #%>% 
-=======
-  filter(shipments > 25) #%>% 
->>>>>>> 6055947fd5b3bf09b533e81900844427ba6fba4a
-  #arrange(desc(complete_rate), desc(undamaged_rate), desc(billed_accurate_rate)) %>% 
-  #print(n=50)
+    quality = ((on_time_rate + complete_rate + undamaged_rate + billed_accurate_rate) /4)
+  ) %>%
+  arrange(desc(quality), avg_rate) #%>%
+#filter(shipments > 25) %>%
+#arrange(desc(complete_rate), desc(undamaged_rate), desc(billed_accurate_rate)) %>%
+#print(n=50)
 
-best_ltl_carriers_plot <- good_ltl_carriers %>% 
+best_ltl_carriers_plot <- good_ltl_carriers %>%
   ggplot(mapping = aes(x = avg_rate, y = quality))+
   geom_point(mapping = aes(color = scac))+
   geom_smooth(method='lm', se = FALSE)+
@@ -671,6 +675,100 @@ best_ltl_carriers_plot <- good_ltl_carriers %>%
     x = "Average Rate",
     y = "Average Quality"
   )
+
+best_ltl_carriers_plot
+
+
+
+good_air_carriers <- merged_df %>%
+  filter(carrier_type == "AIR") %>%
+  group_by(scac, carrier_type) %>%
+  summarize(
+    shipments = n(),
+    on_time_rate = mean(on_time),
+    complete_rate = mean(delivered_complete),
+    undamaged_rate = mean(damage_free),
+    billed_accurate_rate = mean(billed_accurately),
+    avg_rate = (mean(freight_paid)/ mean(miles) / mean(weight/100)),
+    quality = ((on_time_rate + complete_rate + undamaged_rate + billed_accurate_rate) /4)
+  ) %>%
+  arrange(desc(quality), avg_rate) #%>%
+#filter(shipments > 25) %>%
+#arrange(desc(complete_rate), desc(undamaged_rate), desc(billed_accurate_rate)) %>%
+#print(n=50)
+
+
+best_air_carriers_plot <- good_air_carriers %>%
+  ggplot(mapping = aes(x = avg_rate, y = quality))+
+  geom_point(mapping = aes(color = scac))+
+  geom_smooth(method='lm', se = FALSE)+
+  labs(
+    title= "Relationship of Average Quality and Average Rate for AIR Carriers",
+    color = "Carrier",
+    x = "Average Rate",
+    y = "Average Quality"
+  )
+
+best_air_carriers_plot
+
+
+# Best TL Carriers: MER1, CRSE, WSKT, HJBT, FTPC
+
+# Best LTL Carriers: SMTL, YFSY, WWAT, RETL, PITD
+
+# Beat AIR Carrier: EUSA
+
+
+
+# Cost estimate code
+
+# Get miles by type
+
+# Assuming merged_df is your data frame
+total_miles_by_carrier_type <- merged_df %>%
+  group_by(carrier_type) %>%
+  summarise(total_miles = sum(miles, na.rm = TRUE))
+
+# View the results
+print(total_miles_by_carrier_type)
+
+
+
+
+# Conclusions
+
+# TL estimate:  Rate of 5.2370 now vs. 3.6869 after limiting companies, means 1.5501 saved on all orders, resulting in a cost reduction of 29.60%
+
+# LTL estimate: Rate of 0.0594 now vs. 0.0207 after limiting companies, means 0.0387 saved on all orders, resulting in a cost reduction of 65.15%
+
+# AIR estimate: Rate of 0.079420865 now vs. 0.03124791 after limiting companies, means 0.048172955 saved on all orders, resulting in a cost reduction of 60.66%
+
+# TL
+(5137450 * 5.2370)
+(5137450 * 3.6869)
+(26904826 - 18941264)
+
+# Using preferred companies, TL Savings of $7963562
+
+# LTL
+(13758684 * 0.0594)
+(13758684 * 0.0207)
+(817265.8 - 284804.8)
+
+# Using preferred companies, LTL Savings of $532461
+
+# AIR
+(797188 * 0.079420865)
+(797188 * 0.03124791)
+(63313.36 - 24910.46)
+
+# Using preferred companies, LTL Savings of $38402.9
+
+
+
+
+
+
 
 # added by Derek
 
