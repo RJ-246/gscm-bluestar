@@ -179,14 +179,11 @@ filtered_df <- filtered_df %>%
 
 
 sum(trucks_only_df$freight_paid)
-=======
-  )
-  )
+
 filtered_df
 sum(merged_df$freight_paid) 
 trucks_only_df <- merged_df %>% filter(carrier_type %in% c("TL","LTL"))
 sum(trucks_only_df$freight_paid) 
->>>>>>> 6513f37791a42d4b1268d78316e19c5eb71c3d42
 
 sum(filtered_df$reduced_price)
 
